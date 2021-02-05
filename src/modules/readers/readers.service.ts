@@ -1,21 +1,34 @@
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
+import { Inject, forwardRef, Injectable } from '@nestjs/common';
 
+import config from 'src/lib/config';
 import { ReaderDocument, Reader } from 'src/schemas/reader.schema';
 import { ApiException } from 'src/lib/exceptions/api.exception';
 import ErrorCode from 'src/lib/error-code';
-import { emailRegexp } from 'src/lib/helpers';
+import {
+  emailRegexp,
+  objectIdsIncludes,
+  filterObjectIdsFrom,
+} from 'src/lib/helpers';
 import { AuthType } from 'src/types';
+import { ArticlesService } from 'src/modules/articles/articles.service';
+import { RegionsService } from 'src/modules/regions/regions.service';
 
+@Injectable()
 export class ReadersService {
   constructor(
     @InjectModel(Reader.name)
     private readonly ReaderModel: Model<ReaderDocument>,
     private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => ArticlesService))
+    private readonly articlesService: ArticlesService,
+    @Inject(forwardRef(() => RegionsService))
+    private readonly regionsService: RegionsService,
   ) {}
 
   async loginByEmail(email, password) {
@@ -62,18 +75,222 @@ export class ReadersService {
     return newReader;
   }
 
-  async verifyEmail(emailVerificationCode) {
-    const response = await this.ReaderModel.updateOne(
-      { emailVerificationCode },
+  async verifyEmail(emailVerificationCode): Promise<ReaderDocument> {
+    const reader = await this.ReaderModel.findOneAndUpdate(
+      { emailVerificationCode, hasAccess: false },
       { hasAccess: true },
+      { new: true },
     );
 
-    if (!response) {
+    console.log(reader);
+
+    if (!reader) {
       throw new ApiException(ErrorCode.EMAIL_VERIFICATION_FAILED, 403);
     }
 
-    return true;
+    return reader;
   }
+
+  async getArticlesFromFollowedRegions(
+    readerId,
+    page,
+    perPage = config.defaultPerPage,
+  ) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    const { followedRegions } = reader;
+
+    const articles = await this.articlesService.getArticlesFromRegionIds(
+      followedRegions,
+      page,
+      perPage,
+    );
+
+    return articles;
+  }
+
+  async getArticlesToRead(readerId, page, perPage = config.defaultPerPage) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    const { toReadArticles } = reader;
+
+    const articles = await this.articlesService.getArticlesByIds(
+      toReadArticles,
+      page,
+      perPage,
+    );
+
+    return articles;
+  }
+
+  async addArticleToRead(readerId, articleToAddId) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    const { toReadArticles } = reader;
+
+    if (objectIdsIncludes(toReadArticles as Types.ObjectId[], articleToAddId)) {
+      throw new ApiException(
+        ErrorCode.ARTICLE_HAS_BEEN_ALREADY_ADDED_TO_READ,
+        409,
+      );
+    }
+
+    await this.articlesService.checkifArticleExists(articleToAddId);
+
+    Object.assign(reader, {
+      toReadArticles: [...toReadArticles, new Types.ObjectId(articleToAddId)],
+    });
+
+    await reader.save();
+
+    return reader;
+  }
+
+  async removeArticleToRead(readerId, articleToRemoveId) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    const { toReadArticles } = reader;
+
+    if (
+      !objectIdsIncludes(toReadArticles as Types.ObjectId[], articleToRemoveId)
+    ) {
+      throw new ApiException(ErrorCode.LACK_OF_ARTICLE_IN_TO_READ, 409);
+    }
+
+    Object.assign(reader, {
+      toReadArticles: filterObjectIdsFrom(
+        toReadArticles as Types.ObjectId[],
+        articleToRemoveId,
+      ),
+    });
+
+    await reader.save();
+
+    return reader;
+  }
+
+  async getArticlesReaded(readerId, page, perPage = config.defaultPerPage) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    const { readedArticles } = reader;
+
+    const articles = await this.articlesService.getArticlesByIds(
+      readedArticles,
+      page,
+      perPage,
+    );
+
+    return articles;
+  }
+
+  async addArticleReaded(readerId, articleToAddId) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    const { readedArticles } = reader;
+
+    if (objectIdsIncludes(readedArticles as Types.ObjectId[], articleToAddId)) {
+      throw new ApiException(
+        ErrorCode.ARTICLE_HAS_BEEN_ALREADY_ADDED_READED,
+        409,
+      );
+    }
+
+    await this.articlesService.checkifArticleExists(articleToAddId);
+
+    Object.assign(reader, {
+      readedArticles: [...readedArticles, new Types.ObjectId(articleToAddId)],
+    });
+
+    await reader.save();
+
+    return reader;
+  }
+
+  async removeArticleReaded(readerId, articleToRemoveId) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    const { readedArticles } = reader;
+
+    if (
+      !objectIdsIncludes(readedArticles as Types.ObjectId[], articleToRemoveId)
+    ) {
+      throw new ApiException(ErrorCode.LACK_OF_ARTICLE_IN_READED, 409);
+    }
+
+    Object.assign(reader, {
+      readedArticles: filterObjectIdsFrom(
+        readedArticles as Types.ObjectId[],
+        articleToRemoveId,
+      ),
+    });
+
+    await reader.save();
+
+    return reader;
+  }
+
+  async getFollowedRegions(readerId) {
+    const reader = await this.ReaderModel.findById(readerId).populate(
+      'followedRegions',
+    );
+
+    const { followedRegions } = reader;
+
+    return followedRegions;
+  }
+
+  async followRegion(readerId, regionToFollowId) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    const { followedRegions } = reader;
+
+    if (
+      objectIdsIncludes(followedRegions as Types.ObjectId[], regionToFollowId)
+    ) {
+      throw new ApiException(ErrorCode.REGION_ALEADY_FOLLOWED, 409);
+    }
+
+    await this.regionsService.checkIfRegionExists(regionToFollowId);
+
+    Object.assign(reader, {
+      followedRegions: [
+        ...followedRegions,
+        new Types.ObjectId(regionToFollowId),
+      ],
+    });
+
+    await reader.save();
+
+    return reader;
+  }
+
+  async unfollowRegion(readerId, regionToUnfollowId) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    const { followedRegions } = reader;
+
+    if (
+      !objectIdsIncludes(
+        followedRegions as Types.ObjectId[],
+        regionToUnfollowId,
+      )
+    ) {
+      throw new ApiException(ErrorCode.LACK_OF_REGION_IN_FOLLOWED, 409);
+    }
+
+    Object.assign(reader, {
+      followedRegions: filterObjectIdsFrom(
+        followedRegions as Types.ObjectId[],
+        regionToUnfollowId,
+      ),
+    });
+
+    await reader.save();
+
+    return reader;
+  }
+
+  // Helper methods
 
   validatePassword(password, repeatPassword) {
     const validationErrors = [];
@@ -123,3 +340,5 @@ export class ReadersService {
     return token;
   }
 }
+
+// ObjectId("601c8427fe1369519377f9c0")

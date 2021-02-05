@@ -1,6 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseFilters } from '@nestjs/common';
+
+import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 
 @Controller()
+@UseFilters(new ApiExceptionFilter())
 export class RegionsController {
   constructor() {}
 

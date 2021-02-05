@@ -41,6 +41,8 @@ export class ReadersGuard implements CanActivate {
       return false;
     }
 
+    request.headers.readerId = readerId;
+
     return true;
   }
 }

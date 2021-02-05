@@ -6,3 +6,12 @@ async function bootstrap() {
   await app.listen(3000);
 }
 bootstrap();
+
+/**
+ * Do kontynuacji:
+ * regions.controller
+ * articles.controller
+ * publishers.controller
+ * publishers-api.controller
+ * wysyłanie do kindle
+ */

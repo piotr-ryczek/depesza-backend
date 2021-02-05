@@ -10,7 +10,6 @@ import { ArticlesController } from './articles.controller';
 import { ReadersController } from './readers.controller';
 import { RegionsController } from './regions.controller';
 import { PublishersApiController } from './publishers-api.controller';
-import { AppService } from './app.service';
 import { ArticlesModule } from './modules/articles/articles.module';
 import { PublishersModule } from './modules/publishers/publishers.module';
 import { RegionsModule } from './modules/regions/regions.module';
@@ -44,6 +43,6 @@ import { ReadersModule } from './modules/readers/readers.module';
     RegionsController,
     PublishersApiController,
   ],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}

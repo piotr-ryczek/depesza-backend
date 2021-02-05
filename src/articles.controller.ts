@@ -1,8 +1,16 @@
-import { Controller, Get, forwardRef, Inject } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  forwardRef,
+  Inject,
+  UseFilters,
+} from '@nestjs/common';
 
 import { ArticlesService } from 'src/modules/articles/articles.service';
+import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 
 @Controller('/articles')
+@UseFilters(new ApiExceptionFilter())
 export class ArticlesController {
   constructor(
     @Inject(forwardRef(() => ArticlesService))

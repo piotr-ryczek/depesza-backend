@@ -6,8 +6,11 @@ import {
   Inject,
   forwardRef,
   Body,
+  Query,
+  Param,
   UseGuards,
   UseFilters,
+  Headers,
 } from '@nestjs/common';
 
 import { ReadersGuard } from 'src/guards';
@@ -55,9 +58,10 @@ export class ReadersController {
 
   @Post('/verifyEmail')
   async verifyEmail(@Body() payload) {
-    const { verificationCode } = payload;
+    const { emailVerificationCode } = payload;
 
-    const token = await this.readersService.verifyEmail(verificationCode);
+    const reader = await this.readersService.verifyEmail(emailVerificationCode);
+    const token = this.readersService.getToken(reader);
 
     return {
       token,
@@ -67,62 +71,136 @@ export class ReadersController {
   // User board (articles from followed regions)
   @Get('/articles')
   @UseGuards(ReadersGuard)
-  getArticles() {
-    console.log('Dotarliśmy');
+  async getArticles(@Query() query, @Headers() headers) {
+    const { page, perPage } = query;
+    const { readerId } = headers;
+
+    const articles = await this.readersService.getArticlesFromFollowedRegions(
+      readerId,
+      page,
+      perPage,
+    );
+
+    return {
+      articles,
+    };
   }
 
   @Get('/articlesToRead')
   @UseGuards(ReadersGuard)
-  getArticlesToRead() {}
+  async getArticlesToRead(@Query() query, @Headers() headers) {
+    const { page, perPage } = query;
+    const { readerId } = headers;
+
+    const articles = await this.readersService.getArticlesToRead(
+      readerId,
+      page,
+      perPage,
+    );
+
+    return {
+      articles,
+    };
+  }
 
   @Post('/articlesToRead/:articleId')
   @UseGuards(ReadersGuard)
-  addArticleToRead() {}
+  async addArticleToRead(@Param('articleId') articleId, @Headers() headers) {
+    const { readerId } = headers;
+
+    await this.readersService.addArticleToRead(readerId, articleId);
+
+    return {
+      status: 'ok',
+    };
+  }
 
   @Delete('/articlesToRead/:articleId')
   @UseGuards(ReadersGuard)
-  removeArticleToRead() {}
+  async removeArticleToRead(@Param('articleId') articleId, @Headers() headers) {
+    const { readerId } = headers;
+
+    await this.readersService.removeArticleToRead(readerId, articleId);
+
+    return {
+      status: 'ok',
+    };
+  }
 
   @Get('/articlesReaded')
   @UseGuards(ReadersGuard)
-  getArticlesReaded() {}
+  async getArticlesReaded(@Query() query, @Headers() headers) {
+    const { page, perPage } = query;
+    const { readerId } = headers;
+
+    const articles = await this.readersService.getArticlesReaded(
+      readerId,
+      page,
+      perPage,
+    );
+
+    return {
+      articles,
+    };
+  }
 
   @Post('/articlesReaded/:articleId')
   @UseGuards(ReadersGuard)
-  addArticleReaded() {}
+  async addArticleReaded(@Param('articleId') articleId, @Headers() headers) {
+    const { readerId } = headers;
+
+    await this.readersService.addArticleReaded(readerId, articleId);
+
+    return {
+      status: 'ok',
+    };
+  }
 
   @Delete('/articlesReaded/:articleId')
   @UseGuards(ReadersGuard)
-  removeArticleReaded() {}
+  async removeArticleReaded(@Param('articleId') articleId, @Headers() headers) {
+    const { readerId } = headers;
+
+    await this.readersService.removeArticleReaded(readerId, articleId);
+
+    return {
+      status: 'ok',
+    };
+  }
 
   @Get('/regions')
   @UseGuards(ReadersGuard)
-  getFollowedRegions() {}
+  async getFollowedRegions(@Headers() headers) {
+    const { readerId } = headers;
+
+    const regions = await this.readersService.getFollowedRegions(readerId);
+
+    return {
+      regions,
+    };
+  }
 
   @Post('/regions/:regionId')
   @UseGuards(ReadersGuard)
-  followRegion() {}
+  async followRegion(@Param('regionId') regionId, @Headers() headers) {
+    const { readerId } = headers;
+
+    await this.readersService.followRegion(readerId, regionId);
+
+    return {
+      status: 'ok',
+    };
+  }
 
   @Delete('/regions/:regiondId')
   @UseGuards(ReadersGuard)
-  unfollowRegion() {}
+  async unfollowRegion(@Param('regionId') regionId, @Headers() headers) {
+    const { readerId } = headers;
+
+    await this.readersService.unfollowRegion(readerId, regionId);
+
+    return {
+      status: 'ok',
+    };
+  }
 }
-
-/*
-POST /readers/loginByEmail
-POST /readers/registerByEmail
-
-POST /readers/verifyEmail (Reader)
-GET /readers/articles (Reader - tablica użytkownika)
-GET /readers/articlesToRead (Reader)
-POST /readers/articlesToRead/:articleId (Reader)
-DELETE /readers/articlesToRead/:articleId (Reader)
-
-GET /readers/articlesReaded (Reader)
-POST /readers/articlesReaded/:articleId (Reader)
-DELETE /readers/articlesReaded/:articleId (Reader)
-
-GET /readers/regions (Reader - obserwowane regiony)
-POST /readers/regions/:regionId (Reader)
-DELETE /readers/regions/:regionId (Reader)
-*/

@@ -2,6 +2,7 @@ import { Document, Types } from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 import { Publisher } from './publisher.schema';
+import { Region } from './region.schema';
 
 export type ArticleDocument = Article & Document;
 
@@ -23,6 +24,9 @@ export class Article {
 
   @Prop({ type: Types.ObjectId, ref: 'Publisher' })
   publishedBy: Types.ObjectId | Publisher;
+
+  @Prop({ type: Types.ObjectId, ref: 'Region', required: true })
+  region: Types.ObjectId | Region;
 
   @Prop()
   wordpressId: string;

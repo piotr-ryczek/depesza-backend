@@ -1,8 +1,18 @@
-import { Controller, Get, Post, Delete, Put, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Put,
+  UseGuards,
+  UseFilters,
+} from '@nestjs/common';
 
 import { PublishersGuard } from 'src/guards';
+import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 
 @Controller('/publishers')
+@UseFilters(new ApiExceptionFilter())
 export class PublishersController {
   constructor() {}
 
