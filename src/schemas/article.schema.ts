@@ -34,7 +34,10 @@ export class Article {
   @Prop({ type: Types.ObjectId, ref: 'Publisher', default: [] })
   reportedBy: Types.ObjectId[] | Publisher[];
 
-  @Prop({ default: new Date() })
+  @Prop({ default: 0 })
+  reportedByLength: number;
+
+  @Prop()
   createdAt: Date;
 }
 

@@ -14,7 +14,6 @@ import {
 } from '@nestjs/common';
 
 import { ReadersGuard } from 'src/guards';
-import { ArticlesService } from 'src/modules/articles/articles.service';
 import { ReadersService } from 'src/modules/readers/readers.service';
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 
@@ -22,8 +21,6 @@ import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 @UseFilters(new ApiExceptionFilter())
 export class ReadersController {
   constructor(
-    @Inject(forwardRef(() => ArticlesService))
-    private readonly articlesService: ArticlesService,
     @Inject(forwardRef(() => ReadersService))
     private readonly readersService: ReadersService,
   ) {}

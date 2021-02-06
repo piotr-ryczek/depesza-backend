@@ -35,7 +35,7 @@ export class Reader {
   @Prop({ type: Types.ObjectId, ref: 'Region', default: [] })
   followedRegions: Types.ObjectId[] | Region[];
 
-  @Prop({ default: new Date() })
+  @Prop()
   createdAt: Date;
 }
 

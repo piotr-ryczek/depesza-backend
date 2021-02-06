@@ -14,6 +14,7 @@ import {
   emailRegexp,
   objectIdsIncludes,
   filterObjectIdsFrom,
+  validatePassword,
 } from 'src/lib/helpers';
 import { AuthType } from 'src/types';
 import { ArticlesService } from 'src/modules/articles/articles.service';
@@ -52,7 +53,7 @@ export class ReadersService {
     password,
     repeatPassword,
   ): Promise<ReaderDocument> {
-    this.validatePassword(password, repeatPassword);
+    validatePassword(password, repeatPassword);
     await this.validateEmail(email);
 
     const passwordHash = await bcrypt.hash(
@@ -292,28 +293,6 @@ export class ReadersService {
 
   // Helper methods
 
-  validatePassword(password, repeatPassword) {
-    const validationErrors = [];
-
-    if (password.length < 8) {
-      validationErrors.push('PASSWORD_TOO_SHORT');
-    }
-
-    if (password !== repeatPassword) {
-      validationErrors.push('PASSWORDS_DOES_NOT_MATCH');
-    }
-
-    if (validationErrors.length) {
-      throw new ApiException(
-        ErrorCode.INCORRECT_PASSWORD,
-        422,
-        validationErrors,
-      );
-    }
-
-    return true;
-  }
-
   async validateEmail(email) {
     if (!emailRegexp.test(email)) {
       throw new ApiException(ErrorCode.INCORRECT_EMAIL, 422);
@@ -340,5 +319,3 @@ export class ReadersService {
     return token;
   }
 }
-
-// ObjectId("601c8427fe1369519377f9c0")

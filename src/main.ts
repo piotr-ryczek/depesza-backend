@@ -9,9 +9,8 @@ bootstrap();
 
 /**
  * Do kontynuacji:
- * regions.controller
- * articles.controller
- * publishers.controller
+ * pobieranie swoich artykułów (publisher)
+ * wysyłanie maili z kodem do użytkowników
  * publishers-api.controller
- * wysyłanie do kindle
+ * wysyłanie do kindle/pocketbook
  */

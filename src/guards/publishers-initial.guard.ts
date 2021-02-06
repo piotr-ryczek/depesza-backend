@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PublisherJwtToken } from 'src/types';
 
 @Injectable()
-export class PublishersGuard implements CanActivate {
+export class PublishersInitialGuard implements CanActivate {
   constructor(@Inject(JwtService) private readonly jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -37,7 +37,8 @@ export class PublishersGuard implements CanActivate {
       token,
     ) as PublisherJwtToken;
 
-    if (!publisherId || !hasPassword) {
+    // If has password then endpoint shouldn't be accessed
+    if (!publisherId || hasPassword) {
       return false;
     }
 

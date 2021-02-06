@@ -10,10 +10,19 @@ export class Publisher {
   _id: Types.ObjectId;
 
   @Prop()
+  name: string;
+
+  @Prop()
   email: string;
 
   @Prop()
+  initialCode: string;
+
+  @Prop()
   password: string;
+
+  @Prop()
+  secondFactorSecret: string;
 
   @Prop()
   apiKey: string;
@@ -42,7 +51,7 @@ export class Publisher {
   @Prop({ type: Types.ObjectId, ref: 'Article', default: [] })
   articlesReported: Types.ObjectId[] | Article[];
 
-  @Prop({ default: new Date() })
+  @Prop()
   createdAt: Date;
 }
 

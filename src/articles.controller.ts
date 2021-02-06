@@ -4,6 +4,8 @@ import {
   forwardRef,
   Inject,
   UseFilters,
+  Query,
+  Param,
 } from '@nestjs/common';
 
 import { ArticlesService } from 'src/modules/articles/articles.service';
@@ -18,14 +20,22 @@ export class ArticlesController {
   ) {}
 
   @Get()
-  getArticles() {}
+  async getArticles(@Query() query) {
+    const { page, perPage } = query;
+
+    const articles = await this.articlesService.getArticles(page, perPage);
+
+    return {
+      articles,
+    };
+  }
 
   @Get('/:articleId')
-  getArticle() {}
+  async getArticle(@Param('articleId') articleId) {
+    const article = await this.articlesService.getArticle(articleId);
+
+    return {
+      article,
+    };
+  }
 }
-
-/*
-
-GET /articles (All - wszystkie artykuły)
-GET /articles/:articleId (All - jeden artykuł)
-*/
