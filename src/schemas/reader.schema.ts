@@ -36,6 +36,12 @@ export class Reader {
   followedRegions: Types.ObjectId[] | Region[];
 
   @Prop()
+  kindleEmail: string;
+
+  @Prop()
+  pocketBookEmail: string;
+
+  @Prop()
   createdAt: Date;
 }
 

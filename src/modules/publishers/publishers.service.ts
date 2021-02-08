@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { Model, Types } from 'mongoose';
 import * as speakeasy from 'speakeasy';
 import * as bcrypt from 'bcrypt';
@@ -25,6 +26,26 @@ export class PublishersService {
     @Inject(forwardRef(() => ArticlesService))
     private readonly articlesService: ArticlesService,
   ) {}
+
+  async authorizeApiQuery(apiKey, apiPassword) {
+    const publisher = await this.PublisherModel.findOne({
+      apiKey,
+    });
+
+    if (!publisher) {
+      throw new ApiException(ErrorCode.PUBLISHER_DOES_NOT_EXIST, 403);
+    }
+
+    const { apiPassword: apiPasswordHash } = publisher;
+
+    if (!bcrypt.compareSync(apiPassword, apiPasswordHash)) {
+      throw new ApiException(ErrorCode.INCORRECT_PASSWORD, 403);
+    }
+
+    const { _id: publisherId } = publisher;
+
+    return publisherId;
+  }
 
   async login(email, password, code) {
     const publisher = await this.PublisherModel.findOne({
@@ -55,7 +76,10 @@ export class PublishersService {
         },
       );
 
-      return token;
+      return {
+        token,
+        hasPassword: false,
+      };
     }
 
     // Normal Login flow
@@ -81,7 +105,10 @@ export class PublishersService {
       hasPassword: true,
     });
 
-    return token;
+    return {
+      token,
+      hasPassword: true,
+    };
   }
 
   async setPassword({ publisherId, password, repeatPassword }) {
@@ -116,7 +143,12 @@ export class PublishersService {
 
     await publisher.save();
 
-    return base32;
+    const { email } = publisher;
+
+    return {
+      secret2FA: base32,
+      email,
+    };
   }
 
   async getPublishers() {
@@ -211,5 +243,25 @@ export class PublishersService {
     await this.articlesService.undoReportBy(articleId, publisherId);
 
     return publisher;
+  }
+
+  async createApiCredentials(publisherId, apiPassword) {
+    const apiKey = randomBytes(15).toString('hex');
+
+    const apiPasswordHash = await bcrypt.hash(
+      apiPassword,
+      +process.env.PASSWORD_SALT_ROUNDS,
+    );
+
+    const result = await this.PublisherModel.findByIdAndUpdate(publisherId, {
+      apiKey,
+      apiPassword: apiPasswordHash,
+    });
+
+    if (!result) {
+      throw new ApiException(ErrorCode.PUBLISHER_HAS_NOT_BEEN_UPDATED, 409);
+    }
+
+    return apiKey;
   }
 }

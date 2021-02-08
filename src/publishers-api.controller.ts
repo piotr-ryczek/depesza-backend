@@ -5,6 +5,8 @@ import {
   Inject,
   UseGuards,
   UseFilters,
+  Headers,
+  Body,
 } from '@nestjs/common';
 
 import { ArticlesService } from 'src/modules/articles/articles.service';
@@ -21,11 +23,29 @@ export class PublishersApiController {
   ) {}
 
   @Post('/articles')
-  updateOrCreateArticle() {}
+  async updateOrCreateArticle(@Body() payload, @Headers() headers) {
+    const { publisherId } = headers;
+    const {
+      wordpressId,
+      title,
+      excerpt,
+      content,
+      photoUrl,
+      regionId,
+    } = payload;
+
+    const article = await this.articlesService.createOrUpdateByWordpressId(
+      wordpressId,
+      publisherId,
+      {
+        title,
+        excerpt,
+        content,
+        photoUrl,
+        regionId,
+      },
+    );
+
+    return article;
+  }
 }
-
-/*
-
-POST /articles
-
-*/

@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Delete,
+  Patch,
   Inject,
   forwardRef,
   Body,
@@ -200,4 +201,40 @@ export class ReadersController {
       status: 'ok',
     };
   }
+
+  @Patch('/settings')
+  @UseGuards(ReadersGuard)
+  async updateSettings(@Body() payload, @Headers() headers) {
+    const { readerId } = headers;
+
+    await this.readersService.updateSettings(readerId, payload);
+
+    return {
+      status: 'ok',
+    };
+  }
+
+  // @Post('/sendToKindle/:articleId')
+  // @UseGuards(ReadersGuard)
+  // async sendToKindle(@Param('articleId') articleId, @Headers() headers) {
+  //   const { readerId } = headers;
+
+  //   await this.readersService.sendToKindle(readerId, articleId);
+
+  //   return {
+  //     status: 'ok',
+  //   };
+  // }
+
+  // @Post('/sendToPocketBook/:articleId')
+  // @UseGuards(ReadersGuard)
+  // async sendToPocketBook(@Param('articleId') articleId, @Headers() headers) {
+  //   const { readerId } = headers;
+
+  //   await this.readersService.sendToPocketBook(readerId, articleId);
+
+  //   return {
+  //     status: 'ok',
+  //   };
+  // }
 }

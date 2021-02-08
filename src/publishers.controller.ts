@@ -12,8 +12,10 @@ import {
   Param,
   Query,
   Body,
-  Head,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { PublishersGuard, PublishersInitialGuard } from 'src/guards';
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
@@ -34,10 +36,15 @@ export class PublishersController {
   async login(@Body() payload) {
     const { email, password, code } = payload;
 
-    const token = await this.publishersService.login(email, password, code);
+    const { token, hasPassword } = await this.publishersService.login(
+      email,
+      password,
+      code,
+    );
 
     return {
       token,
+      hasPassword,
     };
   }
 
@@ -47,7 +54,7 @@ export class PublishersController {
     const { publisherId } = headers;
     const { password, repeatPassword } = payload;
 
-    const secret2FA = await this.publishersService.setPassword({
+    const { secret2FA, email } = await this.publishersService.setPassword({
       publisherId,
       password,
       repeatPassword,
@@ -55,6 +62,7 @@ export class PublishersController {
 
     return {
       secret2FA,
+      email,
     };
   }
 
@@ -67,46 +75,46 @@ export class PublishersController {
     };
   }
 
-  @Get('/:publisherId')
-  async getPublisher(@Param('publisherId') publisherId) {
-    const publisher = await this.publishersService.getPublisher(publisherId);
-
-    return {
-      publisher,
-    };
-  }
-
-  @Get('/:publisherId/articles')
-  async getPublisherArticles(
-    @Param('publisherId') publisherId,
-    @Query() query,
-  ) {
+  @Get('/articles')
+  @UseGuards(PublishersGuard)
+  async getOwnArticles(@Query() query, @Headers() headers) {
     const { page, perPage } = query;
+    const { publisherId } = headers;
 
-    const articles = await this.articlesService.getPublisherArticles(
+    const {
+      articles,
+      countAll,
+    } = await this.articlesService.getPublisherArticles(
       publisherId,
       page,
       perPage,
+      true,
     );
 
     return {
       articles,
+      countAll,
     };
   }
 
   @Post('/articles')
   @UseGuards(PublishersGuard)
-  async createArticle(@Body() payload, @Headers() headers) {
+  @UseInterceptors(FileInterceptor('file'))
+  async createArticle(
+    @Body() payload,
+    @Headers() headers,
+    @UploadedFile() file,
+  ) {
     const { publisherId } = headers;
-    const { title, excerpt, content, photoUrl, regionId } = payload;
+    const { title, excerpt, content, regionId } = payload;
 
     const article = await this.articlesService.createArticle({
       publisherId,
       title,
       excerpt,
       content,
-      photoUrl,
       regionId,
+      photoFile: file,
     });
 
     return {
@@ -128,13 +136,15 @@ export class PublishersController {
 
   @Put('/articles/:articleId')
   @UseGuards(PublishersGuard)
+  @UseInterceptors(FileInterceptor('file'))
   async updateArticle(
     @Body() payload,
     @Param('articleId') articleId,
     @Headers() headers,
+    @UploadedFile() file,
   ) {
     const { publisherId } = headers;
-    const { title, excerpt, content, photoUrl, regionId } = payload;
+    const { title, excerpt, content, regionId } = payload;
 
     const article = await this.articlesService.updateArticle(
       articleId,
@@ -144,7 +154,7 @@ export class PublishersController {
         title,
         excerpt,
         content,
-        photoUrl,
+        photoFile: file,
         regionId,
       },
     );
@@ -194,22 +204,31 @@ export class PublishersController {
       status: 'ok',
     };
   }
+
+  @Get('/:publisherId')
+  async getPublisher(@Param('publisherId') publisherId) {
+    const publisher = await this.publishersService.getPublisher(publisherId);
+
+    return {
+      publisher,
+    };
+  }
+
+  @Get('/:publisherId/articles')
+  async getPublisherArticles(
+    @Param('publisherId') publisherId,
+    @Query() query,
+  ) {
+    const { page, perPage } = query;
+
+    const articles = await this.articlesService.getPublisherArticles(
+      publisherId,
+      page,
+      perPage,
+    );
+
+    return {
+      articles,
+    };
+  }
 }
-
-/*
-POST /publishers/login
-POST /publishers/login
-
-GET /publishers/:publisherId (All)
-GET /publishers/:publisherId/articles (All)
-
-POST /publishers/articles
-DELETE /publishers/articles/:articleId
-PUT /publishers/articles/:articleId
-
-GET /publishers/articlesReported (Publisher)
-POST /publishers/articlesReported/:articleId (Publisher)
-DELETE /publishers/articlesReported/:articleId (Publisher)
-*/
-
-// eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJwdWJsaXNoZXJJZCI6IjYwMWRhZTI3ZmUxMzY5NTE5Mzc4MjdhMiIsImhhc1Bhc3N3b3JkIjp0cnVlLCJpYXQiOjE2MTI1NTkwNTV9.Nvjgpg3pdYpxsqehttGFICPwHx3ozihTmObAwSosklmjpyH03TzV7nZgq3fCITmOzg3ZICzUVevWm1cZypwiWA

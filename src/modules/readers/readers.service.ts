@@ -19,6 +19,7 @@ import {
 import { AuthType } from 'src/types';
 import { ArticlesService } from 'src/modules/articles/articles.service';
 import { RegionsService } from 'src/modules/regions/regions.service';
+import { EmailNotificationsService } from 'src/modules/email-notifications/email-notifications.service';
 
 @Injectable()
 export class ReadersService {
@@ -26,6 +27,7 @@ export class ReadersService {
     @InjectModel(Reader.name)
     private readonly ReaderModel: Model<ReaderDocument>,
     private readonly jwtService: JwtService,
+    private readonly emailNotificationsService: EmailNotificationsService,
     @Inject(forwardRef(() => ArticlesService))
     private readonly articlesService: ArticlesService,
     @Inject(forwardRef(() => RegionsService))
@@ -69,9 +71,15 @@ export class ReadersService {
       emailVerificationCode,
       password: passwordHash,
       authType: AuthType.EMAIL,
+      createdAt: new Date(),
     });
 
     await newReader.save();
+
+    await this.emailNotificationsService.sendEmailVerificationCode(
+      email,
+      emailVerificationCode,
+    );
 
     return newReader;
   }
@@ -290,6 +298,56 @@ export class ReadersService {
 
     return reader;
   }
+
+  async updateSettings(readerId, settings) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    if (!reader) {
+      throw new ApiException(ErrorCode.READER_DOES_NOT_EXIST, 409);
+    }
+
+    Object.assign(reader, settings);
+
+    await reader.save();
+
+    return reader;
+  }
+
+  // async sendToKindle(readerId, articleId) {
+  //   const reader = await this.ReaderModel.findById(readerId);
+
+  //   if (!reader) {
+  //     throw new ApiException(ErrorCode.READER_DOES_NOT_EXIST, 409);
+  //   }
+
+  //   const { kindleEmail } = reader;
+
+  //   if (!kindleEmail) {
+  //     throw new ApiException(ErrorCode.READER_HAS_NOT_KINDLE_EMAIL, 409);
+  //   }
+
+  //   await this.articlesService.sendArticleToEmail(articleId, kindleEmail);
+
+  //   return true;
+  // }
+
+  // async sendToPocketBook(readerId, articleId) {
+  //   const reader = await this.ReaderModel.findById(readerId);
+
+  //   if (!reader) {
+  //     throw new ApiException(ErrorCode.READER_DOES_NOT_EXIST, 409);
+  //   }
+
+  //   const { pocketBookEmail } = reader;
+
+  //   if (!pocketBookEmail) {
+  //     throw new ApiException(ErrorCode.READER_HAS_NOT_POCKET_BOOK_EMAIL, 409);
+  //   }
+
+  //   await this.articlesService.sendArticleToEmail(articleId, pocketBookEmail);
+
+  //   return true;
+  // }
 
   // Helper methods
 

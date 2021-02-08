@@ -28,6 +28,9 @@ export class Publisher {
   apiKey: string;
 
   @Prop()
+  apiPassword: string;
+
+  @Prop()
   authors: string[];
 
   @Prop()

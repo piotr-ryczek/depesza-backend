@@ -12,7 +12,7 @@ import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 import { RegionsService } from 'src/modules/regions/regions.service';
 import { ArticlesService } from 'src/modules/articles/articles.service';
 
-@Controller()
+@Controller('/regions')
 @UseFilters(new ApiExceptionFilter())
 export class RegionsController {
   constructor(

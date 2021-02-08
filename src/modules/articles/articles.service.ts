@@ -6,11 +6,16 @@ import { ArticleDocument, Article } from 'src/schemas/article.schema';
 import config from 'src/lib/config';
 import { ApiException } from 'src/lib/exceptions/api.exception';
 import ErrorCode from 'src/lib/error-code';
+import { FilesService } from 'src/modules/files/files.service';
+import { EmailNotificationsService } from 'src/modules/email-notifications/email-notifications.service';
+import { cleanupHTML } from 'src/lib/helpers';
 
 export class ArticlesService {
   constructor(
     @InjectModel(Article.name)
     private readonly ArticleModel: Model<ArticleDocument>,
+    private readonly filesService: FilesService,
+    private readonly emailNotificationsService: EmailNotificationsService,
   ) {}
 
   async createArticle(values) {
@@ -19,9 +24,8 @@ export class ArticlesService {
       title,
       excerpt,
       content,
-      photoUrl = null,
+      photoFile = null,
       regionId,
-      wordpressId = null,
     } = values;
 
     const newArticle = new this.ArticleModel({
@@ -29,10 +33,17 @@ export class ArticlesService {
       title,
       excerpt,
       content,
-      photoUrl,
       region: new Types.ObjectId(regionId),
-      wordpressId,
+      createdAt: new Date(),
     });
+
+    if (photoFile) {
+      const photoUrl = await this.filesService.uploadFile(photoFile);
+
+      Object.assign(newArticle, {
+        photoUrl,
+      });
+    }
 
     await newArticle.save();
 
@@ -40,36 +51,85 @@ export class ArticlesService {
   }
 
   async updateArticle(articleId, publisherId, values) {
-    const {
+    const { title, excerpt, content, photoFile = null, regionId } = values;
+
+    const article = await this.ArticleModel.findOne({
+      _id: new Types.ObjectId(articleId),
+      publishedBy: new Types.ObjectId(publisherId),
+    });
+
+    if (!article) {
+      throw new ApiException(ErrorCode.ARTICLE_DOES_NOT_EXIST, 409);
+    }
+
+    Object.assign(article, {
       title,
       excerpt,
       content,
-      photoUrl = null,
-      regionId,
-      wordpressId = null,
-    } = values;
+      region: new Types.ObjectId(regionId),
+    });
 
-    const article = await this.ArticleModel.findOneAndUpdate(
-      {
-        _id: new Types.ObjectId(articleId),
-        publishedBy: new Types.ObjectId(publisherId),
-      },
-      {
-        title,
-        excerpt,
-        content,
+    if (photoFile) {
+      const photoUrl = await this.filesService.uploadFile(photoFile);
+
+      Object.assign(article, {
         photoUrl,
-        region: new Types.ObjectId(regionId),
-        wordpressId,
-      },
-      {
-        new: true,
-      },
-    );
-
-    if (!article) {
-      throw new ApiException(ErrorCode.ARTICLE_HAS_NOT_BEEN_UPDATED, 409);
+      });
     }
+
+    await article.save();
+
+    return article;
+  }
+
+  async createOrUpdateByWordpressId(wordpressId, publisherId, values) {
+    const { title, excerpt, content, photoUrl = null, regionId } = values;
+
+    const commonPayload = {
+      title,
+      excerpt: cleanupHTML(excerpt),
+      content: cleanupHTML(content),
+      region: new Types.ObjectId(regionId),
+    };
+
+    const maybeFoundArticle = await this.ArticleModel.findOne({
+      wordpressId,
+      publishedBy: new Types.ObjectId(publisherId),
+    });
+
+    const article = (() => {
+      // Update
+      if (maybeFoundArticle) {
+        Object.assign(maybeFoundArticle, commonPayload);
+
+        return maybeFoundArticle;
+      }
+
+      // Create
+      const newArticle = new this.ArticleModel({
+        ...commonPayload,
+        publishedBy: new Types.ObjectId(publisherId),
+        createdAt: new Date(),
+        wordpressId,
+      });
+
+      return newArticle;
+    })();
+
+    const { lastWordpressPhotoUrl } = article;
+
+    if (photoUrl && lastWordpressPhotoUrl !== photoUrl) {
+      const uploadPhotoUrl = await this.filesService.retrieveAndUploadFileFromUrl(
+        photoUrl,
+      );
+
+      Object.assign(article, {
+        photoUrl: uploadPhotoUrl,
+        lastWordpressPhotoUrl: photoUrl,
+      });
+    }
+
+    await article.save();
 
     return article;
   }
@@ -85,29 +145,48 @@ export class ArticlesService {
     }
   }
 
-  async queryArticles(findQuery, page, perPage) {
+  async queryArticles(findQuery, page, perPage, withCount = false) {
     const articles = await this.ArticleModel.find({
       ...findQuery,
       reportedByLength: { $lt: 3 },
     })
       .skip((page - 1) * perPage)
-      .limit(perPage)
+      .limit(+perPage)
       .populate({
         path: 'publishedBy',
         select: '_id name logoUrl patroniteUrl',
+      })
+      .populate('region');
+
+    const response = {
+      articles,
+      countAll: false,
+    };
+
+    if (withCount) {
+      const countAll = await this.ArticleModel.countDocuments({
+        ...findQuery,
+        reportedByLength: { $lt: 3 },
       });
 
-    return articles;
+      Object.assign(response, {
+        countAll,
+      });
+    }
+
+    return response;
   }
 
   async getArticle(articleId) {
-    const article = await this.ArticleModel.findById(articleId);
+    const article = await this.ArticleModel.findById(articleId).populate(
+      'region',
+    );
 
     return article;
   }
 
   async getArticles(page, perPage) {
-    const articles = await this.queryArticles({}, page, perPage);
+    const { articles } = await this.queryArticles({}, page, perPage);
 
     return articles;
   }
@@ -117,7 +196,7 @@ export class ArticlesService {
     page,
     perPage = config.defaultPerPage,
   ) {
-    const articles = await this.queryArticles(
+    const { articles } = await this.queryArticles(
       { region: { $in: regionIds } },
       page,
       perPage,
@@ -127,7 +206,7 @@ export class ArticlesService {
   }
 
   async getArticlesFromRegion(regionId, page, perPage = config.defaultPerPage) {
-    const articles = await this.queryArticles(
+    const { articles } = await this.queryArticles(
       { region: new Types.ObjectId(regionId) },
       page,
       perPage,
@@ -136,14 +215,18 @@ export class ArticlesService {
     return articles;
   }
 
-  async getPublisherArticles(publisherId, page, perPage) {
-    const articles = await this.queryArticles(
+  async getPublisherArticles(publisherId, page, perPage, withCount = false) {
+    const { articles, countAll } = await this.queryArticles(
       { publishedBy: new Types.ObjectId(publisherId) },
       page,
       perPage,
+      withCount,
     );
 
-    return articles;
+    return {
+      articles,
+      countAll,
+    };
   }
 
   async checkifArticleExists(articleId) {
@@ -200,4 +283,36 @@ export class ArticlesService {
       },
     );
   }
+
+  // async sendArticleToEmail(articleId, email) {
+  //   const article = await this.ArticleModel.findById(articleId);
+
+  //   if (!article) {
+  //     throw new ApiException(ErrorCode.ARTICLE_DOES_NOT_EXIST, 409);
+  //   }
+
+  //   const { title, content } = article;
+
+  //   const htmlContent = `
+  //   <html>
+  //     <head>
+  //       <meta charset="utf-8">
+  //       <title>${title}</title>
+  //     </head>
+  //     <body>
+  //       ${content}
+  //     </body>
+  //   </html>
+  // `;
+
+  //   await this.emailNotificationsService.sendEmailWithAttachment(
+  //     email,
+  //     title,
+  //     '',
+  //     `${title}.html`,
+  //     htmlContent,
+  //   );
+
+  //   return true;
+  // }
 }

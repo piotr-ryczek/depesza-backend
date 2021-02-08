@@ -7,6 +7,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { Reader, ReaderSchema } from 'src/schemas/reader.schema';
 import { ArticlesModule } from 'src/modules/articles/articles.module';
 import { RegionsModule } from 'src/modules/regions/regions.module';
+import { EmailNotificationsModule } from 'src/modules/email-notifications/email-notifications.module';
 
 import { ReadersService } from './readers.service';
 
@@ -23,6 +24,7 @@ import { ReadersService } from './readers.service';
     }),
     forwardRef(() => ArticlesModule),
     forwardRef(() => RegionsModule),
+    EmailNotificationsModule,
   ],
   providers: [ReadersService],
   exports: [ReadersService],

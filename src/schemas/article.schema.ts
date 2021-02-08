@@ -31,6 +31,9 @@ export class Article {
   @Prop()
   wordpressId: string;
 
+  @Prop()
+  lastWordpressPhotoUrl: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Publisher', default: [] })
   reportedBy: Types.ObjectId[] | Publisher[];
 
