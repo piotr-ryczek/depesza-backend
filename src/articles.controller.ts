@@ -23,7 +23,7 @@ export class ArticlesController {
   async getArticles(@Query() query) {
     const { page, perPage } = query;
 
-    const articles = await this.articlesService.getArticles(page, perPage);
+    const { articles } = await this.articlesService.getArticles(page, perPage);
 
     return {
       articles,

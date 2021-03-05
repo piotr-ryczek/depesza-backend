@@ -1,10 +1,10 @@
 import { Model, Types } from 'mongoose';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Inject, forwardRef, Injectable } from '@nestjs/common';
+import { Inject, forwardRef, Injectable, HttpService } from '@nestjs/common';
 
 import config from 'src/lib/config';
 import { ReaderDocument, Reader } from 'src/schemas/reader.schema';
@@ -32,22 +32,89 @@ export class ReadersService {
     private readonly articlesService: ArticlesService,
     @Inject(forwardRef(() => RegionsService))
     private readonly regionsService: RegionsService,
+    private httpService: HttpService,
   ) {}
 
+  async findOrCreateFacebookReader({ facebookId, email }) {
+    const maybeFoundReader = await this.ReaderModel.findOne({
+      facebookId,
+    });
+
+    if (maybeFoundReader) return maybeFoundReader;
+
+    const newReader = new this.ReaderModel({
+      authType: AuthType.FACEBOOK,
+      hasAccess: true,
+      email,
+      facebookId,
+    });
+
+    await newReader.save();
+
+    return newReader;
+  }
+
+  async loginOrRegisterByFacebook(authToken) {
+    try {
+      const { data } = await this.httpService
+        .get(
+          `https://graph.facebook.com/me?fields=id,email&access_token=${authToken}`,
+        )
+        .toPromise();
+
+      const { id: facebookId, email } = data;
+
+      const reader = await this.findOrCreateFacebookReader({
+        facebookId,
+        email,
+      });
+
+      return reader;
+    } catch (error) {
+      throw new ApiException(ErrorCode.FACEBOOK_ERROR, 403);
+    }
+  }
+
   async loginByEmail(email, password) {
-    const reader = await this.ReaderModel.findOne({ email });
+    const reader = await this.ReaderModel.findOne({
+      email,
+      authType: AuthType.EMAIL,
+    });
 
     if (!reader) {
       throw new ApiException(ErrorCode.READER_DOES_NOT_EXIST, 403);
     }
 
-    const { password: passwordHash } = reader;
+    const { password: passwordHash, hasAccess } = reader;
 
     if (!bcrypt.compareSync(password, passwordHash)) {
       throw new ApiException(ErrorCode.INCORRECT_PASSWORD, 403);
     }
 
-    return this.getToken(reader);
+    if (!hasAccess) {
+      throw new ApiException(ErrorCode.HAS_NOT_ACCESS, 403);
+    }
+
+    return reader;
+  }
+
+  async refreshToken(readerId) {
+    const reader = await this.ReaderModel.findById(readerId);
+
+    if (!reader) {
+      throw new ApiException(ErrorCode.READER_DOES_NOT_EXIST, 403);
+    }
+
+    const token = this.getToken(reader);
+
+    const { toReadArticles, followedRegions, hasAccess } = reader;
+
+    return {
+      token,
+      toReadArticles,
+      followedRegions,
+      hasAccess,
+    };
   }
 
   async registerbyEmail(
@@ -87,11 +154,9 @@ export class ReadersService {
   async verifyEmail(emailVerificationCode): Promise<ReaderDocument> {
     const reader = await this.ReaderModel.findOneAndUpdate(
       { emailVerificationCode, hasAccess: false },
-      { hasAccess: true },
+      { hasAccess: true, emailVerificationCode: null },
       { new: true },
     );
-
-    console.log(reader);
 
     if (!reader) {
       throw new ApiException(ErrorCode.EMAIL_VERIFICATION_FAILED, 403);
@@ -104,32 +169,49 @@ export class ReadersService {
     readerId,
     page,
     perPage = config.defaultPerPage,
+    withCount = false,
   ) {
     const reader = await this.ReaderModel.findById(readerId);
 
     const { followedRegions } = reader;
 
-    const articles = await this.articlesService.getArticlesFromRegionIds(
+    const {
+      articles,
+      countAll,
+    } = await this.articlesService.getArticlesFromRegionIds(
       followedRegions,
       page,
       perPage,
+      withCount,
     );
 
-    return articles;
+    return {
+      articles,
+      countAll,
+    };
   }
 
-  async getArticlesToRead(readerId, page, perPage = config.defaultPerPage) {
+  async getArticlesToRead(
+    readerId,
+    page,
+    perPage = config.defaultPerPage,
+    withCount = false,
+  ) {
     const reader = await this.ReaderModel.findById(readerId);
 
-    const { toReadArticles } = reader;
+    const toReadArticles = reader.toReadArticles as Types.ObjectId[];
 
-    const articles = await this.articlesService.getArticlesByIds(
-      toReadArticles,
+    const { articles, countAll } = await this.articlesService.getArticlesByIds({
+      ids: toReadArticles,
       page,
       perPage,
-    );
+      withCount,
+    });
 
-    return articles;
+    return {
+      articles,
+      countAll,
+    };
   }
 
   async addArticleToRead(readerId, articleToAddId) {
@@ -178,18 +260,27 @@ export class ReadersService {
     return reader;
   }
 
-  async getArticlesReaded(readerId, page, perPage = config.defaultPerPage) {
+  async getArticlesReaded(
+    readerId,
+    page,
+    perPage = config.defaultPerPage,
+    withCount = false,
+  ) {
     const reader = await this.ReaderModel.findById(readerId);
 
-    const { readedArticles } = reader;
+    const readedArticles = reader.readedArticles as Types.ObjectId[];
 
-    const articles = await this.articlesService.getArticlesByIds(
-      readedArticles,
+    const { articles, countAll } = await this.articlesService.getArticlesByIds({
+      ids: readedArticles,
       page,
       perPage,
-    );
+      withCount,
+    });
 
-    return articles;
+    return {
+      articles,
+      countAll,
+    };
   }
 
   async addArticleReaded(readerId, articleToAddId) {
@@ -356,7 +447,10 @@ export class ReadersService {
       throw new ApiException(ErrorCode.INCORRECT_EMAIL, 422);
     }
 
-    const ifReaderExists = await this.ReaderModel.countDocuments({ email });
+    const ifReaderExists = await this.ReaderModel.countDocuments({
+      email,
+      authType: AuthType.EMAIL,
+    });
 
     if (ifReaderExists) {
       throw new ApiException(ErrorCode.READER_WITH_EMAIL_ALREADY_EXISTS, 422);
@@ -368,11 +462,16 @@ export class ReadersService {
   getToken(reader: ReaderDocument) {
     const { _id: readerId, hasAccess, authType } = reader;
 
-    const token = this.jwtService.sign({
-      readerId,
-      hasAccess,
-      authType,
-    });
+    const token = this.jwtService.sign(
+      {
+        readerId,
+        hasAccess,
+        authType,
+      },
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+      },
+    );
 
     return token;
   }

@@ -35,3 +35,7 @@ lerna-debug.log*
 
 # Env
 .env
+.env.prod
+.env.dev
+
+/uploads

@@ -12,6 +12,12 @@ export class Region {
 
   @Prop()
   countries: string[];
+
+  @Prop()
+  continent: string;
+
+  @Prop()
+  iconUrl: string;
 }
 
 export const RegionSchema = SchemaFactory.createForClass(Region);

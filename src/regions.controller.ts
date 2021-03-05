@@ -31,11 +31,20 @@ export class RegionsController {
     };
   }
 
+  @Get('/:regionId')
+  async getRegion(@Param('regionId') regionId) {
+    const region = await this.regionsService.getRegion(regionId);
+
+    return {
+      region,
+    };
+  }
+
   @Get('/:regionId/articles')
   async getArticlesForRegion(@Param('regionId') regionId, @Query() query) {
     const { page, perPage } = query;
 
-    const articles = await this.articlesService.getArticlesFromRegion(
+    const { articles } = await this.articlesService.getArticlesFromRegion(
       regionId,
       page,
       perPage,

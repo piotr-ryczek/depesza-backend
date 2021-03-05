@@ -22,6 +22,9 @@ export class Article {
   @Prop()
   photoUrl: string;
 
+  @Prop()
+  author: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Publisher' })
   publishedBy: Types.ObjectId | Publisher;
 
@@ -42,6 +45,9 @@ export class Article {
 
   @Prop()
   createdAt: Date;
+
+  @Prop({ default: false })
+  isPublished: boolean;
 }
 
 export const ArticleSchema = SchemaFactory.createForClass(Article);

@@ -1,4 +1,4 @@
-import { Model, Types } from 'mongoose';
+import { Model, Types, FilterQuery } from 'mongoose';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { ArticleDocument, Article } from 'src/schemas/article.schema';
@@ -22,19 +22,23 @@ export class ArticlesService {
     const {
       publisherId,
       title,
+      author,
       excerpt,
       content,
       photoFile = null,
       regionId,
+      isPublished,
     } = values;
 
     const newArticle = new this.ArticleModel({
       publishedBy: new Types.ObjectId(publisherId),
       title,
+      author,
       excerpt,
       content,
       region: new Types.ObjectId(regionId),
       createdAt: new Date(),
+      isPublished,
     });
 
     if (photoFile) {
@@ -51,7 +55,15 @@ export class ArticlesService {
   }
 
   async updateArticle(articleId, publisherId, values) {
-    const { title, excerpt, content, photoFile = null, regionId } = values;
+    const {
+      title,
+      author,
+      excerpt,
+      content,
+      photoFile = null,
+      regionId,
+      isPublished,
+    } = values;
 
     const article = await this.ArticleModel.findOne({
       _id: new Types.ObjectId(articleId),
@@ -64,9 +76,11 @@ export class ArticlesService {
 
     Object.assign(article, {
       title,
+      author,
       excerpt,
       content,
       region: new Types.ObjectId(regionId),
+      isPublished,
     });
 
     if (photoFile) {
@@ -111,6 +125,7 @@ export class ArticlesService {
         publishedBy: new Types.ObjectId(publisherId),
         createdAt: new Date(),
         wordpressId,
+        isPublished: false,
       });
 
       return newArticle;
@@ -145,16 +160,34 @@ export class ArticlesService {
     }
   }
 
-  async queryArticles(findQuery, page, perPage, withCount = false) {
-    const articles = await this.ArticleModel.find({
-      ...findQuery,
-      reportedByLength: { $lt: 3 },
-    })
+  async queryArticles({
+    findQuery = {},
+    page,
+    perPage,
+    withCount = false,
+    onlyAccessible = true,
+  }: {
+    page: number;
+    perPage: number;
+    findQuery?: FilterQuery<Article>;
+    withCount?: boolean;
+    onlyAccessible?: boolean; // Published and not reported by 2 or more publishers
+  }) {
+    const finalFindQuery = findQuery;
+
+    if (onlyAccessible) {
+      Object.assign(finalFindQuery, {
+        reportedByLength: { $lt: 3 },
+        isPublished: true,
+      });
+    }
+
+    const articles = await this.ArticleModel.find(finalFindQuery)
       .skip((page - 1) * perPage)
       .limit(+perPage)
       .populate({
         path: 'publishedBy',
-        select: '_id name logoUrl patroniteUrl',
+        select: '_id name author logoUrl patroniteUrl',
       })
       .populate('region');
 
@@ -164,10 +197,7 @@ export class ArticlesService {
     };
 
     if (withCount) {
-      const countAll = await this.ArticleModel.countDocuments({
-        ...findQuery,
-        reportedByLength: { $lt: 3 },
-      });
+      const countAll = await this.ArticleModel.countDocuments(finalFindQuery);
 
       Object.assign(response, {
         countAll,
@@ -178,50 +208,87 @@ export class ArticlesService {
   }
 
   async getArticle(articleId) {
-    const article = await this.ArticleModel.findById(articleId).populate(
-      'region',
-    );
+    const article = await this.ArticleModel.findById(articleId)
+      .populate('region')
+      .populate({
+        path: 'publishedBy',
+        select: '_id name author logoUrl patroniteUrl',
+      });
 
     return article;
   }
 
-  async getArticles(page, perPage) {
-    const { articles } = await this.queryArticles({}, page, perPage);
+  async getArticles(page, perPage, withCount = false) {
+    const { articles, countAll } = await this.queryArticles({
+      page,
+      perPage,
+      withCount,
+    });
 
-    return articles;
+    return {
+      articles,
+      countAll,
+    };
   }
 
   async getArticlesFromRegionIds(
     regionIds,
     page,
     perPage = config.defaultPerPage,
+    withCount = false,
   ) {
-    const { articles } = await this.queryArticles(
-      { region: { $in: regionIds } },
-      page,
-      perPage,
-    );
-
-    return articles;
-  }
-
-  async getArticlesFromRegion(regionId, page, perPage = config.defaultPerPage) {
-    const { articles } = await this.queryArticles(
-      { region: new Types.ObjectId(regionId) },
-      page,
-      perPage,
-    );
-
-    return articles;
-  }
-
-  async getPublisherArticles(publisherId, page, perPage, withCount = false) {
-    const { articles, countAll } = await this.queryArticles(
-      { publishedBy: new Types.ObjectId(publisherId) },
+    const { articles, countAll } = await this.queryArticles({
+      findQuery: { region: { $in: regionIds } },
       page,
       perPage,
       withCount,
-    );
+    });
+
+    return {
+      articles,
+      countAll,
+    };
+  }
+
+  async getArticlesFromRegion(
+    regionId,
+    page,
+    perPage = config.defaultPerPage,
+    withCount = false,
+  ) {
+    const { articles, countAll } = await this.queryArticles({
+      findQuery: { region: new Types.ObjectId(regionId) },
+      page,
+      perPage,
+      withCount,
+    });
+
+    return {
+      articles,
+      countAll,
+    };
+  }
+
+  async getPublisherArticles({
+    publisherId,
+    page,
+    perPage,
+    withCount = false,
+    onlyAccessible = true,
+  }: {
+    publisherId: string;
+    page: number;
+    perPage: number;
+    withCount?: boolean;
+    onlyAccessible?: boolean;
+  }) {
+    const { articles, countAll } = await this.queryArticles({
+      findQuery: { publishedBy: new Types.ObjectId(publisherId) },
+      page,
+      perPage,
+      withCount,
+      onlyAccessible,
+    });
 
     return {
       articles,
@@ -239,14 +306,31 @@ export class ArticlesService {
     return true;
   }
 
-  async getArticlesByIds(ids, page, perPage = config.defaultPerPage) {
-    const articles = await this.ArticleModel.find({
-      _id: { $in: ids },
-    })
-      .skip((page - 1) * perPage)
-      .limit(perPage);
+  async getArticlesByIds({
+    ids,
+    page,
+    perPage = config.defaultPerPage,
+    withCount = false,
+    onlyAccessible = true,
+  }: {
+    ids: string[] | Types.ObjectId[];
+    page: number;
+    perPage?: number;
+    withCount?: boolean;
+    onlyAccessible?: boolean;
+  }) {
+    const { articles, countAll } = await this.queryArticles({
+      findQuery: { _id: { $in: ids } },
+      page,
+      perPage,
+      withCount,
+      onlyAccessible,
+    });
 
-    return articles;
+    return {
+      articles,
+      countAll,
+    };
   }
 
   async checkIfPublisherHasArticle(publisherId, articleId) {

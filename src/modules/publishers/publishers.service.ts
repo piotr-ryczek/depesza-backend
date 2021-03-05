@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto';
 import { Model, Types } from 'mongoose';
 import * as speakeasy from 'speakeasy';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -16,6 +16,7 @@ import { PublisherDocument, Publisher } from 'src/schemas/publisher.schema';
 import { ApiException } from 'src/lib/exceptions/api.exception';
 import ErrorCode from 'src/lib/error-code';
 import { ArticlesService } from 'src/modules/articles/articles.service';
+import { FilesService } from 'src/modules/files/files.service';
 
 @Injectable()
 export class PublishersService {
@@ -25,6 +26,7 @@ export class PublishersService {
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => ArticlesService))
     private readonly articlesService: ArticlesService,
+    private readonly filesService: FilesService,
   ) {}
 
   async authorizeApiQuery(apiKey, apiPassword) {
@@ -56,7 +58,11 @@ export class PublishersService {
       throw new ApiException(ErrorCode.PUBLISHER_DOES_NOT_EXIST, 403);
     }
 
-    const { password: passwordHash, _id: publisherId } = publisher;
+    const {
+      password: passwordHash,
+      _id: publisherId,
+      articlesReported,
+    } = publisher;
 
     // Initial Password Flow
     if (!passwordHash) {
@@ -79,6 +85,8 @@ export class PublishersService {
       return {
         token,
         hasPassword: false,
+        articlesReported: [],
+        publisherId,
       };
     }
 
@@ -100,14 +108,52 @@ export class PublishersService {
       throw new ApiException(ErrorCode.INCORRECT_2FA_CODE, 403);
     }
 
-    const token = this.jwtService.sign({
-      publisherId,
-      hasPassword: true,
-    });
+    const token = this.jwtService.sign(
+      {
+        publisherId,
+        hasPassword: true,
+      },
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+      },
+    );
 
     return {
       token,
       hasPassword: true,
+      articlesReported,
+      publisherId,
+    };
+  }
+
+  /**
+   *
+   * @description Also returning current data
+   */
+  async refreshToken(publisherId) {
+    const publisher = await this.PublisherModel.findById(publisherId);
+
+    if (!publisher) {
+      throw new ApiException(ErrorCode.PUBLISHER_DOES_NOT_EXIST, 403);
+    }
+
+    const { articlesReported } = publisher;
+
+    const token = this.jwtService.sign(
+      {
+        publisherId,
+        hasPassword: true, // Should be true as PublisherGuard securing
+      },
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+      },
+    );
+
+    return {
+      token,
+      hasPassword: true,
+      articlesReported,
+      publisherId,
     };
   }
 
@@ -154,7 +200,7 @@ export class PublishersService {
   async getPublishers() {
     const publishers = await this.PublisherModel.find(
       {},
-      '_id name logoUrl patroniteUrl',
+      '_id name description logoUrl patroniteUrl',
     );
 
     return publishers;
@@ -163,27 +209,68 @@ export class PublishersService {
   async getPublisher(publisherId) {
     const publisher = await this.PublisherModel.findById(
       publisherId,
-      '_id name authors logoUrl patroniteUrl facebookUrl twitterUrl www',
+      '_id name description authors logoUrl patroniteUrl facebookUrl twitterUrl www',
     );
 
     return publisher;
   }
 
-  async getReportedArticles(publisherId, page, perPage) {
+  async updatePublisher(publisherId, values) {
+    const {
+      logoFile = null,
+      name,
+      description,
+      authors,
+      patroniteUrl,
+      facebookUrl,
+      twitterUrl,
+      www,
+    } = values;
+
     const publisher = await this.PublisherModel.findById(publisherId);
 
-    const { articlesReported } = publisher;
+    Object.assign(publisher, {
+      name,
+      description,
+      authors,
+      patroniteUrl,
+      facebookUrl,
+      twitterUrl,
+      www,
+    });
 
-    const articles = await this.articlesService.getArticlesByIds(
-      articlesReported,
-      page,
-      perPage,
-    );
+    if (logoFile) {
+      const logoUrl = await this.filesService.uploadFile(logoFile);
 
-    return articles;
+      Object.assign(publisher, {
+        logoUrl,
+      });
+    }
+
+    await publisher.save();
+
+    return this.cleanFromCriticalInformation(publisher);
   }
 
-  // Pamietaj, ze w dwie strony
+  async getReportedArticles(publisherId, page, perPage, withCount = false) {
+    const publisher = await this.PublisherModel.findById(publisherId);
+
+    const articlesReported = publisher.articlesReported as Types.ObjectId[];
+
+    const { articles, countAll } = await this.articlesService.getArticlesByIds({
+      ids: articlesReported,
+      page,
+      perPage,
+      withCount,
+      onlyAccessible: false,
+    });
+
+    return {
+      articles,
+      countAll,
+    };
+  }
+
   async reportArticle(publisherId, articleId) {
     const publisher = await this.PublisherModel.findById(publisherId);
 
@@ -210,7 +297,7 @@ export class PublishersService {
     }
 
     Object.assign(publisher, {
-      readedArticles: [...articlesReported, new Types.ObjectId(articleId)],
+      articlesReported: [...articlesReported, new Types.ObjectId(articleId)],
     });
 
     await publisher.save();
@@ -263,5 +350,20 @@ export class PublishersService {
     }
 
     return apiKey;
+  }
+
+  cleanFromCriticalInformation(publisher: PublisherDocument) {
+    const {
+      initialCode,
+      password,
+      secondFactorSecret,
+      apiKey,
+      apiPassword,
+      articlesReported, // Not sure
+      createdAt,
+      ...rest
+    } = publisher;
+
+    return rest;
   }
 }

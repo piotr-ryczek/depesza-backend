@@ -10,7 +10,10 @@ export class Publisher {
   _id: Types.ObjectId;
 
   @Prop()
-  name: string;
+  name: string; // Editable
+
+  @Prop()
+  description: string; // Editable
 
   @Prop()
   email: string;
@@ -31,22 +34,22 @@ export class Publisher {
   apiPassword: string;
 
   @Prop()
-  authors: string[];
+  authors: string[]; // Editable
 
   @Prop()
-  logoUrl: string;
+  logoUrl: string; // Editable
 
   @Prop()
-  patroniteUrl: string;
+  patroniteUrl: string; // Editable
 
   @Prop()
-  facebookUrl: string;
+  facebookUrl: string; // Editable
 
   @Prop()
-  twitterUrl: string;
+  twitterUrl: string; // Editable
 
   @Prop()
-  www: string;
+  www: string; // Editable
 
   @Prop({ type: Types.ObjectId, ref: 'Article', default: [] })
   articles: Types.ObjectId[] | Article[];

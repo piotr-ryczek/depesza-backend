@@ -26,6 +26,9 @@ export class Reader {
   @Prop()
   hasAccess: boolean;
 
+  @Prop()
+  facebookId: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Article', default: [] })
   toReadArticles: Types.ObjectId[] | Article[];
 

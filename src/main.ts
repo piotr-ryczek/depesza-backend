@@ -10,7 +10,7 @@ async function bootstrap() {
   app.use(helmet());
   app.use(morgan('tiny'));
   app.enableCors(); // TODO: Restrict
-  await app.listen(3000);
+  await app.listen(5000);
 }
 bootstrap();
 

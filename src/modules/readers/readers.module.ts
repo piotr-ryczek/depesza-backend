@@ -1,6 +1,6 @@
 import { Algorithm } from 'jsonwebtoken';
 
-import { Module, forwardRef } from '@nestjs/common';
+import { Module, forwardRef, HttpModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 
@@ -25,6 +25,7 @@ import { ReadersService } from './readers.service';
     forwardRef(() => ArticlesModule),
     forwardRef(() => RegionsModule),
     EmailNotificationsModule,
+    HttpModule,
   ],
   providers: [ReadersService],
   exports: [ReadersService],

@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -58,9 +58,12 @@ export class AdminsService implements OnModuleInit {
 
     const { _id: adminId } = admin;
 
-    const token = this.jwtService.sign({
-      adminId,
-    });
+    const token = this.jwtService.sign(
+      {
+        adminId,
+      },
+      { expiresIn: process.env.JWT_EXPIRES_IN },
+    );
 
     return token;
   }

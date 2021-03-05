@@ -20,7 +20,7 @@ export class EmailNotificationsService {
   }
 
   async sendEmailVerificationCode(email, code) {
-    const body = `<a href="${process.env.APP_NAME_DEEP_LINK}/verify-email?verificationCode=${code}">Otwórz link w aplikacji na swoim telefonie z Androidem</a>`;
+    const body = `<a href="${process.env.APP_NAME_DEEP_LINK}/confirmEmail/${code}">Otwórz link w aplikacji na swoim telefonie z Androidem</a>`;
 
     await this.sendEmail(email, 'Zweryfikuj swój email', body);
   }

@@ -21,6 +21,12 @@ export class RegionsService {
     return true;
   }
 
+  async getRegion(regionId) {
+    const region = await this.RegionModel.findById(regionId);
+
+    return region;
+  }
+
   async getRegions() {
     const regions = await this.RegionModel.find({});
 

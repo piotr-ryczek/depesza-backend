@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 
 import { ArticlesModule } from 'src/modules/articles/articles.module';
 import { Publisher, PublisherSchema } from 'src/schemas/publisher.schema';
+import { FilesModule } from 'src/modules/files/files.module';
 import { PublishersService } from './publishers.service';
 
 @Module({
@@ -22,6 +23,7 @@ import { PublishersService } from './publishers.service';
       }),
     }),
     forwardRef(() => ArticlesModule),
+    FilesModule,
   ],
   providers: [PublishersService],
   exports: [PublishersService],

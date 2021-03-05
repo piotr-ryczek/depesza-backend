@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import * as fs from 'fs/promises';
+import { promises as fs } from 'fs';
 import { v4 } from 'uuid';
 import * as Jimp from 'jimp';
 import * as path from 'path';

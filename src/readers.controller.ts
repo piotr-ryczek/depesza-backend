@@ -26,14 +26,59 @@ export class ReadersController {
     private readonly readersService: ReadersService,
   ) {}
 
+  @Post('/authByFacebook')
+  async authByFacebook(@Body() payload) {
+    const { authToken } = payload;
+
+    const reader = await this.readersService.loginOrRegisterByFacebook(
+      authToken,
+    );
+    const token = this.readersService.getToken(reader);
+
+    const { toReadArticles, followedRegions, hasAccess } = reader;
+
+    return {
+      token,
+      toReadArticles,
+      followedRegions,
+      hasAccess,
+    };
+  }
+
   @Post('/loginByEmail')
   async loginByEmail(@Body() payload) {
     const { email, password } = payload;
 
-    const token = await this.readersService.loginByEmail(email, password);
+    const reader = await this.readersService.loginByEmail(email, password);
+    const token = this.readersService.getToken(reader);
+
+    const { toReadArticles, followedRegions, hasAccess } = reader;
 
     return {
       token,
+      toReadArticles,
+      followedRegions,
+      hasAccess,
+    };
+  }
+
+  @Post('/refresh')
+  @UseGuards(ReadersGuard)
+  async refreshToken(@Headers() headers) {
+    const { readerId } = headers;
+
+    const {
+      token,
+      toReadArticles,
+      followedRegions,
+      hasAccess,
+    } = await this.readersService.refreshToken(readerId);
+
+    return {
+      token,
+      toReadArticles,
+      followedRegions,
+      hasAccess,
     };
   }
 
@@ -41,16 +86,10 @@ export class ReadersController {
   async registerByEmail(@Body() payload) {
     const { email, password, repeatPassword } = payload;
 
-    const newReader = await this.readersService.registerbyEmail(
-      email,
-      password,
-      repeatPassword,
-    );
-
-    const token = this.readersService.getToken(newReader);
+    await this.readersService.registerbyEmail(email, password, repeatPassword);
 
     return {
-      token,
+      status: 'ok',
     };
   }
 
@@ -73,7 +112,9 @@ export class ReadersController {
     const { page, perPage } = query;
     const { readerId } = headers;
 
-    const articles = await this.readersService.getArticlesFromFollowedRegions(
+    const {
+      articles,
+    } = await this.readersService.getArticlesFromFollowedRegions(
       readerId,
       page,
       perPage,
@@ -90,7 +131,7 @@ export class ReadersController {
     const { page, perPage } = query;
     const { readerId } = headers;
 
-    const articles = await this.readersService.getArticlesToRead(
+    const { articles } = await this.readersService.getArticlesToRead(
       readerId,
       page,
       perPage,
@@ -131,7 +172,7 @@ export class ReadersController {
     const { page, perPage } = query;
     const { readerId } = headers;
 
-    const articles = await this.readersService.getArticlesReaded(
+    const { articles } = await this.readersService.getArticlesReaded(
       readerId,
       page,
       perPage,
@@ -190,7 +231,7 @@ export class ReadersController {
     };
   }
 
-  @Delete('/regions/:regiondId')
+  @Delete('/regions/:regionId')
   @UseGuards(ReadersGuard)
   async unfollowRegion(@Param('regionId') regionId, @Headers() headers) {
     const { readerId } = headers;
