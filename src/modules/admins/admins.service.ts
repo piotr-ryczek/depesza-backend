@@ -62,7 +62,7 @@ export class AdminsService implements OnModuleInit {
       {
         adminId,
       },
-      { expiresIn: process.env.JWT_EXPIRES_IN },
+      { expiresIn: +process.env.JWT_EXPIRES_IN },
     );
 
     return token;

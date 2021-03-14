@@ -209,7 +209,7 @@ export class PublishersController {
     @UploadedFile() file,
   ) {
     const { publisherId } = headers;
-    const { title, excerpt, content, regionId, isPublished } = payload;
+    const { title, author, excerpt, content, regionId, isPublished } = payload;
 
     const article = await this.articlesService.updateArticle(
       articleId,
@@ -218,6 +218,7 @@ export class PublishersController {
         publisherId,
         isPublished,
         title,
+        author,
         excerpt,
         content,
         photoFile: file,

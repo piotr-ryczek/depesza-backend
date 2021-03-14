@@ -3,6 +3,7 @@ import {
   CanActivate,
   Inject,
   ExecutionContext,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
@@ -18,18 +19,25 @@ export class ReadersGuard implements CanActivate {
     const { authorization } = request.headers;
 
     if (!authorization) {
+      Logger.warn('Reader unauthorized: lack of authorization');
+
       return false;
     }
 
     const [, token] = authorization.split('Bearer ');
 
     if (!token) {
+      Logger.warn('Reader unauthorized: lack of token');
+
       return false;
     }
 
     try {
       this.jwtService.verify(token);
     } catch (error) {
+      Logger.warn(error.stack);
+      Logger.warn('Reader unauthorized: token verification failed');
+
       return false;
     }
 
@@ -38,6 +46,8 @@ export class ReadersGuard implements CanActivate {
     ) as ReaderJwtToken;
 
     if (!readerId || !hasAccess) {
+      Logger.warn('Reader unauthorized: lack of readerId or has not access');
+
       return false;
     }
 

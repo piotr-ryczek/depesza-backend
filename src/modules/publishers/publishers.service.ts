@@ -49,9 +49,9 @@ export class PublishersService {
     return publisherId;
   }
 
-  async login(email, password, code) {
+  async login(email: string, password: string, code: string) {
     const publisher = await this.PublisherModel.findOne({
-      email,
+      email: email.toLocaleLowerCase(),
     });
 
     if (!publisher) {
@@ -114,7 +114,7 @@ export class PublishersService {
         hasPassword: true,
       },
       {
-        expiresIn: process.env.JWT_EXPIRES_IN,
+        expiresIn: +process.env.JWT_EXPIRES_IN,
       },
     );
 
@@ -145,7 +145,7 @@ export class PublishersService {
         hasPassword: true, // Should be true as PublisherGuard securing
       },
       {
-        expiresIn: process.env.JWT_EXPIRES_IN,
+        expiresIn: +process.env.JWT_EXPIRES_IN,
       },
     );
 

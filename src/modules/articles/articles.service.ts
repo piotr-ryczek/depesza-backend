@@ -34,8 +34,8 @@ export class ArticlesService {
       publishedBy: new Types.ObjectId(publisherId),
       title,
       author,
-      excerpt,
-      content,
+      excerpt: cleanupHTML(excerpt),
+      content: cleanupHTML(content),
       region: new Types.ObjectId(regionId),
       createdAt: new Date(),
       isPublished,
@@ -77,8 +77,8 @@ export class ArticlesService {
     Object.assign(article, {
       title,
       author,
-      excerpt,
-      content,
+      excerpt: cleanupHTML(excerpt),
+      content: cleanupHTML(content),
       region: new Types.ObjectId(regionId),
       isPublished,
     });

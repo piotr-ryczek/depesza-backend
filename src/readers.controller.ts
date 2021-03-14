@@ -17,6 +17,7 @@ import {
 import { ReadersGuard } from 'src/guards';
 import { ReadersService } from 'src/modules/readers/readers.service';
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
+import { ApiValidationExceptionFilter } from 'src/lib/exceptions/api-validation-exception.filter';
 
 @Controller('/readers')
 @UseFilters(new ApiExceptionFilter())
@@ -83,6 +84,7 @@ export class ReadersController {
   }
 
   @Post('/registerByEmail')
+  @UseFilters(new ApiValidationExceptionFilter())
   async registerByEmail(@Body() payload) {
     const { email, password, repeatPassword } = payload;
 

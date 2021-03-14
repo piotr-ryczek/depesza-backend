@@ -3,6 +3,7 @@ import {
   CanActivate,
   Inject,
   ExecutionContext,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
@@ -24,12 +25,17 @@ export class PublishersGuard implements CanActivate {
     const [, token] = authorization.split('Bearer ');
 
     if (!token) {
+      Logger.warn('Publisher unauthorized: lack of token');
+
       return false;
     }
 
     try {
       this.jwtService.verify(token);
     } catch (error) {
+      Logger.warn('Publisher unauthorized: token verification failed');
+      Logger.warn(error.stack);
+
       return false;
     }
 
@@ -38,6 +44,10 @@ export class PublishersGuard implements CanActivate {
     ) as PublisherJwtToken;
 
     if (!publisherId || !hasPassword) {
+      Logger.warn(
+        'Publisher unauthorized: lack of publisherId or hasPassword is false',
+      );
+
       return false;
     }
 

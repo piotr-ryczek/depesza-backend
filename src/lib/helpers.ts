@@ -33,18 +33,20 @@ export const validatePassword = (password, repeatPassword) => {
   const validationErrors = [];
 
   if (password.length < 8) {
-    validationErrors.push('PASSWORD_TOO_SHORT');
+    validationErrors.push({
+      field: 'password',
+      message: ErrorCode.PASSWORD_TOO_SHORT,
+    });
   }
 
   if (password !== repeatPassword) {
-    validationErrors.push('PASSWORDS_DOES_NOT_MATCH');
+    validationErrors.push({
+      field: 'repeatPassword',
+      message: ErrorCode.PASSWORDS_DOES_NOT_MATCH,
+    });
   }
 
-  if (validationErrors.length) {
-    throw new ApiException(ErrorCode.INCORRECT_PASSWORD, 422, validationErrors);
-  }
-
-  return true;
+  return validationErrors;
 };
 
 /**
@@ -58,11 +60,17 @@ export const cleanupHTML = (html) => {
 
   $('*')
     .contents()
-    .filter((index, node) => node.type === 'comment')
+    .filter((index, node) => node.type === 'comment') // Removing comments
     .remove();
+  // Removing unaccepted tags
   $(
     'img, dt, dl, dd, div, form, caption, canvas, input, button, article, address, abbr, area, aside, base, col, code, data, datalist, figcaption, frame, iframe, head, header, ins, map, main, mark, pre, rp, rt, script, source, style, sub, summary, svg, textarea, track, video',
   ).remove();
+
+  // Cleaning up from attributes
+  $('*').each(function () {
+    this.attribs = {};
+  });
 
   const result = $('body').html();
 

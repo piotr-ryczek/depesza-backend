@@ -3,6 +3,7 @@ import {
   CanActivate,
   Inject,
   ExecutionContext,
+  Logger,
 } from '@nestjs/common';
 import { PublishersService } from 'src/modules/publishers/publishers.service';
 
@@ -19,12 +20,16 @@ export class PublishersApiGuard implements CanActivate {
     const { apikey, authorization } = request.headers;
 
     if (!authorization || !apikey) {
+      Logger.warn('PublisherApi unauthorized: lack of authorization or apiKey');
+
       return false;
     }
 
     const [, apiPassword] = authorization.split('Basic ');
 
     if (!apiPassword) {
+      Logger.warn('PublisherApi unauthorized: lack of apiPassword');
+
       return false;
     }
 
@@ -36,6 +41,8 @@ export class PublishersApiGuard implements CanActivate {
 
       request.headers.publisherId = publisherId;
     } catch (error) {
+      Logger.warn('PublisherApi unauthorized: apiQuery authorization failed');
+
       return false;
     }
 

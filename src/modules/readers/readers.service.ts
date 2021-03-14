@@ -20,6 +20,7 @@ import { AuthType } from 'src/types';
 import { ArticlesService } from 'src/modules/articles/articles.service';
 import { RegionsService } from 'src/modules/regions/regions.service';
 import { EmailNotificationsService } from 'src/modules/email-notifications/email-notifications.service';
+import { ApiValidationException } from 'src/lib/exceptions/api-validation.exception';
 
 @Injectable()
 export class ReadersService {
@@ -35,7 +36,13 @@ export class ReadersService {
     private httpService: HttpService,
   ) {}
 
-  async findOrCreateFacebookReader({ facebookId, email }) {
+  async findOrCreateFacebookReader({
+    facebookId,
+    email,
+  }: {
+    facebookId: string;
+    email: string;
+  }) {
     const maybeFoundReader = await this.ReaderModel.findOne({
       facebookId,
     });
@@ -45,7 +52,7 @@ export class ReadersService {
     const newReader = new this.ReaderModel({
       authType: AuthType.FACEBOOK,
       hasAccess: true,
-      email,
+      email: email.toLocaleLowerCase(),
       facebookId,
     });
 
@@ -75,9 +82,9 @@ export class ReadersService {
     }
   }
 
-  async loginByEmail(email, password) {
+  async loginByEmail(email: string, password: string) {
     const reader = await this.ReaderModel.findOne({
-      email,
+      email: email.toLocaleLowerCase(),
       authType: AuthType.EMAIL,
     });
 
@@ -118,12 +125,20 @@ export class ReadersService {
   }
 
   async registerbyEmail(
-    email,
-    password,
-    repeatPassword,
+    email: string,
+    password: string,
+    repeatPassword: string,
   ): Promise<ReaderDocument> {
-    validatePassword(password, repeatPassword);
-    await this.validateEmail(email);
+    const validationErrors = [];
+
+    const possiblePasswordErrors = validatePassword(password, repeatPassword);
+    const possibleEmailErrors = await this.validateEmail(email);
+
+    validationErrors.push(...possiblePasswordErrors, ...possibleEmailErrors);
+
+    if (validationErrors.length) {
+      throw new ApiValidationException(422, validationErrors);
+    }
 
     const passwordHash = await bcrypt.hash(
       password,
@@ -133,7 +148,7 @@ export class ReadersService {
     const emailVerificationCode = randomBytes(15).toString('hex');
 
     const newReader = new this.ReaderModel({
-      email,
+      email: email.toLocaleLowerCase(),
       hasAccess: false,
       emailVerificationCode,
       password: passwordHash,
@@ -444,7 +459,13 @@ export class ReadersService {
 
   async validateEmail(email) {
     if (!emailRegexp.test(email)) {
-      throw new ApiException(ErrorCode.INCORRECT_EMAIL, 422);
+      // throw new ApiException(ErrorCode.INCORRECT_EMAIL, 422);
+      return [
+        {
+          field: 'email',
+          message: ErrorCode.INCORRECT_EMAIL,
+        },
+      ];
     }
 
     const ifReaderExists = await this.ReaderModel.countDocuments({
@@ -453,10 +474,16 @@ export class ReadersService {
     });
 
     if (ifReaderExists) {
-      throw new ApiException(ErrorCode.READER_WITH_EMAIL_ALREADY_EXISTS, 422);
+      // throw new ApiException(ErrorCode.READER_WITH_EMAIL_ALREADY_EXISTS, 422);
+      return [
+        {
+          field: 'email',
+          message: ErrorCode.READER_WITH_EMAIL_ALREADY_EXISTS,
+        },
+      ];
     }
 
-    return true;
+    return [];
   }
 
   getToken(reader: ReaderDocument) {
@@ -469,7 +496,7 @@ export class ReadersService {
         authType,
       },
       {
-        expiresIn: process.env.JWT_EXPIRES_IN,
+        expiresIn: +process.env.JWT_EXPIRES_IN,
       },
     );
 
