@@ -52,7 +52,7 @@ export const validatePassword = (password, repeatPassword) => {
 /**
  *
  * @description
- * Accepted tags: h1, h2, h3, h4, h5, h6, p, ul, ol, li, a
+ * Accepted tags: h1, h2, h3, h4, h5, h6, p, ul, ol, li, a, img, figure, figcaption, div
  * Possibly accepted tags: table, blockquote
  */
 export const cleanupHTML = (html) => {
@@ -64,13 +64,15 @@ export const cleanupHTML = (html) => {
     .remove();
   // Removing unaccepted tags
   $(
-    'img, dt, dl, dd, div, form, caption, canvas, input, button, article, address, abbr, area, aside, base, col, code, data, datalist, figcaption, frame, iframe, head, header, ins, map, main, mark, pre, rp, rt, script, source, style, sub, summary, svg, textarea, track, video',
+    'dt, dl, dd, form, caption, canvas, input, button, article, address, abbr, area, aside, base, col, code, data, datalist, frame, iframe, head, header, ins, map, main, mark, pre, rp, rt, script, source, style, sub, summary, svg, textarea, track, video',
   ).remove();
 
   // Cleaning up from attributes
-  $('*').each(function () {
-    this.attribs = {};
-  });
+  $('*')
+    .not('img')
+    .each(function () {
+      this.attribs = {};
+    });
 
   const result = $('body').html();
 

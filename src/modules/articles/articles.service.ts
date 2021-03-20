@@ -183,6 +183,7 @@ export class ArticlesService {
     }
 
     const articles = await this.ArticleModel.find(finalFindQuery)
+      .sort({ createdAt: -1 })
       .skip((page - 1) * perPage)
       .limit(+perPage)
       .populate({
