@@ -74,6 +74,10 @@ export const cleanupHTML = (html) => {
       this.attribs = {};
     });
 
+  $('figure').replaceWith(function () {
+    return $($(this).html());
+  });
+
   const result = $('body').html();
 
   return result;

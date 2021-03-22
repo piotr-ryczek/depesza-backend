@@ -101,8 +101,8 @@ export class ArticlesService {
 
     const commonPayload = {
       title,
-      excerpt: cleanupHTML(excerpt),
-      content: cleanupHTML(content),
+      excerpt: excerpt ? cleanupHTML(excerpt) : '',
+      content: content ? cleanupHTML(content) : '',
       region: new Types.ObjectId(regionId),
     };
 
