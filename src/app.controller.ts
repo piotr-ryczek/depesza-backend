@@ -5,7 +5,7 @@ export class AppController {
   @Get('/status')
   async getStatus() {
     return {
-      status: 'okkk',
+      status: 'ok',
     };
   }
 }
