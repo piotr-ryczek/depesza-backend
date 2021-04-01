@@ -14,7 +14,9 @@ jobs:
         with:
           node-version: 12.x
       - name: envs
-        run: echo ${{ secrets.REMOTE_HOST }}
+        env:
+          SUPER_SECRET: ${{ secrets.REMOTE_HOST }}
+        run: echo "$SUPER_SECRET"
       # - name: Install yarn
       #   run: npm i -g yarn
       # - name: install app dependencies
