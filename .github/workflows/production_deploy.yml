@@ -1,0 +1,43 @@
+name: Staging deploy
+
+on:
+  push:
+    branches: [production]
+
+jobs:
+  build_and_deploy_staging:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: envs
+        run: echo ${{ secrets.REMOTE_HOST }}
+      # - name: Install yarn
+      #   run: npm i -g yarn
+      # - name: install app dependencies
+      #   run: yarn
+      #   env:
+      #     CI: true
+      # - name: Build
+      #   run: yarn build
+      # - name: Deploy to Staging server
+      #   uses: easingthemes/ssh-deploy@v2.0.7
+      #   env:
+      #     SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+      #     ARGS: "-rltgoDzvO --delete"
+      #     SOURCE: "dist/"
+      #     REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+      #     REMOTE_USER: ${{ secrets.REMOTE_USER }}
+      #     TARGET: "domains/${{ secrets.DOMAIN }}/public_nodejs"
+      # - name: Restart domain
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: ${{ secrets.REMOTE_HOST }}
+      #     username: ${{ secrets.REMOTE_USER }}
+      #     key : ${{ secrets.SERVER_SSH_KEY }}
+      #     script: devil www restart ${{ secrets.DOMAIN }}
+      # - name: Unfreezing query
+      #   run: curl https://${{ secrets.DOMAIN }}/app/status

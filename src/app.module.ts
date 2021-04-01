@@ -12,6 +12,7 @@ import { PublishersController } from './publishers.controller';
 import { ArticlesController } from './articles.controller';
 import { ReadersController } from './readers.controller';
 import { RegionsController } from './regions.controller';
+import { AppController } from './app.controller';
 
 import { PublishersApiController } from './publishers-api.controller';
 import { ArticlesModule } from './modules/articles/articles.module';
@@ -47,6 +48,7 @@ import { AdminsModule } from './modules/admins/admins.module';
     forwardRef(() => AdminsModule),
   ],
   controllers: [
+    AppController,
     AdminController,
     PublishersController,
     ArticlesController,

@@ -13,9 +13,3 @@ async function bootstrap() {
   await app.listen(5000);
 }
 bootstrap();
-
-/**
- * TODO list:
- * OAuth Facebook Login/Register
- * Send to Kindle/Pocketbook (postponed)
- */
