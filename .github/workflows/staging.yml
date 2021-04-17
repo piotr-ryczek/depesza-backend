@@ -15,9 +15,8 @@ jobs:
           node-version: 12.x
       - name: envs
         env:
-          SUPER_SECRET: ${{ secrets.REMOTE_HOST }}
-          OTHER_SECRET: somevalue
-        run: echo "$SUPER_SECRET-$OTHER_SECRET"
+          SUPER_SECRET: ${{ secrets.STAGING_REMOTE_HOST }}
+        run: echo "$SUPER_SECRET"
       # - name: Install yarn
       #   run: npm i -g yarn
       # - name: install app dependencies
