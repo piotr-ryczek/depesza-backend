@@ -24,18 +24,18 @@ jobs:
       - name: Deploy to Staging server
         uses: easingthemes/ssh-deploy@v2.0.7
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SERVER_SSH_KEY }}
           ARGS: "-rltgoDzvO --delete"
           SOURCE: "dist/"
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-          REMOTE_USER: ${{ secrets.REMOTE_USER }}
-          TARGET: "domains/${{ secrets.DOMAIN }}/public_nodejs"
+          REMOTE_HOST: ${{ secrets.STAGING_REMOTE_HOST }}
+          REMOTE_USER: ${{ secrets.STAGING_REMOTE_USER }}
+          TARGET: "domains/${{ secrets.STAGING_DOMAIN }}/public_nodejs"
       - name: Restart domain
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key : ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.STAGING_REMOTE_HOST }}
+          username: ${{ secrets.STAGING_REMOTE_USER }}
+          key : ${{ secrets.STAGING_SERVER_SSH_KEY }}
           script: devil www restart ${{ secrets.DOMAIN }}
       - name: Unfreezing query
-        run: curl https://${{ secrets.DOMAIN }}/app/status
+        run: curl https://${{ secrets.STAGING_DOMAIN }}/app/status
