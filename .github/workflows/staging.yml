@@ -36,6 +36,6 @@ jobs:
           host: ${{ secrets.STAGING_REMOTE_HOST }}
           username: ${{ secrets.STAGING_REMOTE_USER }}
           key : ${{ secrets.STAGING_SERVER_SSH_KEY }}
-          script: devil www restart ${{ secrets.DOMAIN }}
+          script: devil www restart ${{ secrets.STAGING_DOMAIN }}
       - name: Unfreezing query
         run: curl https://${{ secrets.STAGING_DOMAIN }}/app/status
