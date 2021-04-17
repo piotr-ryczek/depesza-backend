@@ -13,31 +13,38 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12.x
-      - name: Install yarn
-        run: npm i -g yarn
-      - name: install app dependencies
-        run: yarn
-        env:
-          CI: true
-      - name: Build
-        run: yarn build
-      - name: Copy node_modules to /dist
-        run: cp -a ./node_modules/ ./dist
-      - name: Deploy to Staging server
-        uses: easingthemes/ssh-deploy@v2.0.7
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SERVER_SSH_KEY }}
-          ARGS: "-rltgoDzvO --delete"
-          SOURCE: "dist/"
-          REMOTE_HOST: ${{ secrets.STAGING_REMOTE_HOST }}
-          REMOTE_USER: ${{ secrets.STAGING_REMOTE_USER }}
-          TARGET: "domains/${{ secrets.STAGING_DOMAIN }}/public_nodejs"
-      - name: Restart domain
+      # - name: Install yarn
+      #   run: npm i -g yarn
+      # - name: install app dependencies
+      #   run: yarn
+      #   env:
+      #     CI: true
+      # - name: Build
+      #   run: yarn build
+      # - name: Copy node_modules to /dist
+      #   run: cp -a ./node_modules/ ./dist
+      # - name: Deploy to Staging server
+      #   uses: easingthemes/ssh-deploy@v2.0.7
+      #   env:
+      #     SSH_PRIVATE_KEY: ${{ secrets.STAGING_SERVER_SSH_KEY }}
+      #     ARGS: "-rltgoDzvO --delete"
+      #     SOURCE: "dist/"
+      #     REMOTE_HOST: ${{ secrets.STAGING_REMOTE_HOST }}
+      #     REMOTE_USER: ${{ secrets.STAGING_REMOTE_USER }}
+      #     TARGET: "domains/${{ secrets.STAGING_DOMAIN }}/public_nodejs"
+      - name: Copy .env
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.STAGING_REMOTE_HOST }}
           username: ${{ secrets.STAGING_REMOTE_USER }}
           key : ${{ secrets.STAGING_SERVER_SSH_KEY }}
-          script: devil www restart ${{ secrets.STAGING_DOMAIN }}
-      - name: Unfreezing query
-        run: curl https://${{ secrets.STAGING_DOMAIN }}/app/status
+          script: cd domains/${{ secrets.STAGING_DOMAIN }} && cp ./.env ./public_nodejs
+      # - name: Restart domain
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: ${{ secrets.STAGING_REMOTE_HOST }}
+      #     username: ${{ secrets.STAGING_REMOTE_USER }}
+      #     key : ${{ secrets.STAGING_SERVER_SSH_KEY }}
+      #     script: devil www restart ${{ secrets.STAGING_DOMAIN }}
+      # - name: Unfreezing query
+      #   run: curl https://${{ secrets.STAGING_DOMAIN }}/app/status
