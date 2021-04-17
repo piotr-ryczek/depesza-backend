@@ -30,6 +30,13 @@ jobs:
           REMOTE_HOST: ${{ secrets.PRODUCTION_REMOTE_HOST }}
           REMOTE_USER: ${{ secrets.PRODUCTION_REMOTE_USER }}
           TARGET: "domains/${{ secrets.PRODUCTION_DOMAIN }}/public_nodejs"
+      - name: Copy .env
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PRODUCTION_REMOTE_HOST }}
+          username: ${{ secrets.PRODUCTION_REMOTE_USER }}
+          key : ${{ secrets.PRODUCTION_SERVER_SSH_KEY }}
+          script: cd domains/${{ secrets.PRODUCTION_DOMAIN }} && cp ./.env ./public_nodejs
       - name: Restart domain
         uses: appleboy/ssh-action@master
         with:
