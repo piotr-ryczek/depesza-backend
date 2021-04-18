@@ -78,6 +78,8 @@ export const cleanupHTML = (html) => {
     return $($(this).html());
   });
 
+  $('img').wrap('<figure />');
+
   const result = $('body').html();
 
   return result;
