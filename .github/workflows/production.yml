@@ -24,25 +24,25 @@ jobs:
       - name: Deploy to Production server
         uses: easingthemes/ssh-deploy@v2.0.7
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SERVER_SSH_KEY }}
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
           ARGS: "-rltgoDzvO --delete"
           SOURCE: "dist/"
-          REMOTE_HOST: ${{ secrets.PRODUCTION_REMOTE_HOST }}
-          REMOTE_USER: ${{ secrets.PRODUCTION_REMOTE_USER }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
           TARGET: "domains/${{ secrets.PRODUCTION_DOMAIN }}/public_nodejs"
       - name: Copy .env
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.PRODUCTION_REMOTE_HOST }}
-          username: ${{ secrets.PRODUCTION_REMOTE_USER }}
-          key : ${{ secrets.PRODUCTION_SERVER_SSH_KEY }}
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key : ${{ secrets.SERVER_SSH_KEY }}
           script: cd domains/${{ secrets.PRODUCTION_DOMAIN }} && cp ./.env ./public_nodejs
       - name: Restart domain
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.PRODUCTION_REMOTE_HOST }}
-          username: ${{ secrets.PRODUCTION_REMOTE_USER }}
-          key : ${{ secrets.PRODUCTION_SERVER_SSH_KEY }}
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key : ${{ secrets.SERVER_SSH_KEY }}
           script: devil www restart ${{ secrets.PRODUCTION_DOMAIN }}
       - name: Unfreezing query
         run: curl https://${{ secrets.PRODUCTION_DOMAIN }}/app/status
