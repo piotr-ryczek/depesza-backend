@@ -16,7 +16,7 @@ import {
   filterObjectIdsFrom,
   validatePassword,
 } from 'src/lib/helpers';
-import { AuthType } from 'src/types';
+import { AuthType, ValidationError } from 'src/types';
 import { ArticlesService } from 'src/modules/articles/articles.service';
 import { RegionsService } from 'src/modules/regions/regions.service';
 import { EmailNotificationsService } from 'src/modules/email-notifications/email-notifications.service';
@@ -124,7 +124,7 @@ export class ReadersService {
     };
   }
 
-  async registerbyEmail(
+  async registerByEmail(
     email: string,
     password: string,
     repeatPassword: string,
@@ -457,7 +457,7 @@ export class ReadersService {
 
   // Helper methods
 
-  async validateEmail(email) {
+  async validateEmail(email: string): Promise<ValidationError[]> {
     if (!emailRegexp.test(email)) {
       // throw new ApiException(ErrorCode.INCORRECT_EMAIL, 422);
       return [

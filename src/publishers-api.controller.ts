@@ -12,6 +12,7 @@ import {
 import { ArticlesService } from 'src/modules/articles/articles.service';
 import { PublishersApiGuard } from 'src/guards';
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
+import { WordpressArticlePayloadDto } from './types/dtos';
 
 @Controller('/publishersApi')
 @UseFilters(new ApiExceptionFilter())
@@ -23,8 +24,10 @@ export class PublishersApiController {
   ) {}
 
   @Post('/articles')
-  async updateOrCreateArticle(@Body() payload, @Headers() headers) {
-    const { publisherId } = headers;
+  async updateOrCreateArticle(
+    @Body() payload: WordpressArticlePayloadDto,
+    @Headers('publisherId') publisherId: string,
+  ) {
     const {
       wordpressId,
       title,

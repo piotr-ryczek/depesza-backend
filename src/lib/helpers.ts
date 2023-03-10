@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 
 import { ApiException } from 'src/lib/exceptions/api.exception';
 import ErrorCode from 'src/lib/error-code';
+import { ValidationError } from 'src/types';
 
 export const emailRegexp = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
@@ -29,7 +30,10 @@ export const filterObjectIdsFrom = (itemsArray: Types.ObjectId[], value) => {
   return itemsArray.filter((item) => !item.equals(valueObjectId));
 };
 
-export const validatePassword = (password, repeatPassword) => {
+export const validatePassword = (
+  password: string,
+  repeatPassword: string,
+): ValidationError[] => {
   const validationErrors = [];
 
   if (password.length < 8) {

@@ -35,7 +35,7 @@ export class FilesService implements OnModuleInit {
     }
   }
 
-  async handleUpload(originalName, buffer) {
+  async handleUpload(originalName: string, buffer: Buffer): Promise<string> {
     const [, extension] = fileExtensionRegexp.exec(originalName);
 
     const finalFilename = `${v4()}.${extension}`;
@@ -84,7 +84,7 @@ export class FilesService implements OnModuleInit {
     return finalFilename;
   }
 
-  async uploadFile(file) {
+  async uploadFile(file: Express.Multer.File): Promise<string> {
     const { originalname, buffer } = file;
 
     const fileName = await this.handleUpload(originalname, buffer);
@@ -92,13 +92,20 @@ export class FilesService implements OnModuleInit {
     return fileName;
   }
 
-  async retrieveAndUploadFileFromUrl(fileUrl) {
-    const { data } = await this.httpService
-      .get(fileUrl, { responseType: 'arraybuffer' })
-      .toPromise();
+  async retrieveAndUploadFileFromUrl(fileUrl: string): Promise<string> {
+    try {
+      const { data } = await this.httpService
+        .get(fileUrl, { responseType: 'arraybuffer' })
+        .toPromise();
 
-    const fileName = await this.handleUpload(fileUrl, data);
+      const fileName = await this.handleUpload(fileUrl, data);
 
-    return fileName;
+      return fileName;
+    } catch (error) {
+      // TODO:
+      console.error(error);
+
+      return null;
+    }
   }
 }

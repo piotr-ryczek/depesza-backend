@@ -22,7 +22,7 @@ export class PublishersGuard implements CanActivate {
       return false;
     }
 
-    const [, token] = authorization.split('Bearer ');
+    const [, token]: [string, string] = authorization.split('Bearer ');
 
     if (!token) {
       Logger.warn('Publisher unauthorized: lack of token');

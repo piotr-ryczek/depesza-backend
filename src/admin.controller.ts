@@ -27,7 +27,7 @@ export class AdminController {
   ) {}
 
   @Post('/login')
-  async login(@Body() payload) {
+  async login(@Body() payload: { email: string; password: string }) {
     const { email, password } = payload;
 
     const token = await this.adminsService.login(email, password);
@@ -39,7 +39,9 @@ export class AdminController {
 
   @Post('/createApiCredentials')
   @UseGuards(AdminsGuard)
-  async createApiCredentials(@Body() payload) {
+  async createApiCredentials(
+    @Body() payload: { publisherId: string; password: string },
+  ) {
     const { publisherId, password } = payload;
 
     const apiKey = await this.publishersService.createApiCredentials(
