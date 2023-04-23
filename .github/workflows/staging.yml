@@ -16,7 +16,7 @@ jobs:
       - name: Install yarn
         run: npm i -g yarn
       - name: install app dependencies
-        run: yarn
+        run: yarn install
         env:
           CI: true
       - name: Build
