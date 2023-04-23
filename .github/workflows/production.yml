@@ -16,11 +16,13 @@ jobs:
       - name: Install yarn
         run: npm i -g yarn
       - name: install app dependencies
-        run: yarn
+        run: yarn install
         env:
           CI: true
       - name: Build
         run: yarn build
+      - name: Copy node_modules to /dist
+        run: cp -a ./node_modules/ ./dist
       - name: Deploy to Production server
         uses: easingthemes/ssh-deploy@v2.0.7
         env:
