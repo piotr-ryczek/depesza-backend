@@ -14,6 +14,7 @@ import {
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 import { PublishersService } from 'src/modules/publishers/publishers.service';
 import { AdminsService } from 'src/modules/admins/admins.service';
+import { FilesService } from 'src/modules/files/files.service';
 import { AdminsGuard } from 'src/guards';
 
 @Controller('/admin')
@@ -24,6 +25,8 @@ export class AdminController {
     private readonly adminsService: AdminsService,
     @Inject(forwardRef(() => PublishersService))
     private readonly publishersService: PublishersService,
+    @Inject(forwardRef(() => FilesService))
+    private readonly filesService: FilesService,
   ) {}
 
   @Post('/login')
@@ -51,6 +54,16 @@ export class AdminController {
 
     return {
       apiKey,
+    };
+  }
+
+  @Post('/regenerateThumbnails')
+  @UseGuards(AdminsGuard)
+  async regenerateThumbnails() {
+    await this.filesService.regenerateThumbnails();
+
+    return {
+      status: 'ok',
     };
   }
 }

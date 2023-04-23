@@ -20,6 +20,7 @@ import { PublishersModule } from './modules/publishers/publishers.module';
 import { RegionsModule } from './modules/regions/regions.module';
 import { ReadersModule } from './modules/readers/readers.module';
 import { AdminsModule } from './modules/admins/admins.module';
+import { FilesModule } from './modules/files/files.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { AdminsModule } from './modules/admins/admins.module';
     forwardRef(() => ReadersModule),
     forwardRef(() => PublishersModule),
     forwardRef(() => AdminsModule),
+    forwardRef(() => FilesModule),
   ],
   controllers: [
     AppController,
