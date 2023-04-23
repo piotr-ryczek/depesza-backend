@@ -26,8 +26,10 @@ export class PublishersApiController {
   @Post('/articles')
   async updateOrCreateArticle(
     @Body() payload: WordpressArticlePayloadDto,
-    @Headers('publisherId') publisherId: string,
+    @Headers() headers,
   ) {
+    const { publisherId } = headers;
+
     const {
       wordpressId,
       title,
