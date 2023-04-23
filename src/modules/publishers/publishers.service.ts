@@ -30,7 +30,10 @@ export class PublishersService {
     private readonly filesService: FilesService,
   ) {}
 
-  async authorizeApiQuery(apiKey, apiPassword) {
+  async authorizeApiQuery(
+    apiKey: string,
+    apiPassword: string,
+  ): Promise<string> {
     const publisher = await this.PublisherModel.findOne({
       apiKey,
     });

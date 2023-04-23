@@ -25,7 +25,7 @@ export class ImagesController {
   async getImage(
     @Res() res: Response,
     @Param('fileName') fileName: string,
-    @Query('fileSize') fileSize: string,
+    @Query('fileSize') fileSize: string, // Without prefix
   ) {
     const file = await this.s3Service.getFile(fileName, fileSize);
 
