@@ -1,17 +1,16 @@
 import { Algorithm } from 'jsonwebtoken';
-import * as path from 'path';
 
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { ServeStaticModule } from '@nestjs/serve-static';
 
 import { AdminController } from './admin.controller';
 import { PublishersController } from './publishers.controller';
 import { ArticlesController } from './articles.controller';
 import { ReadersController } from './readers.controller';
 import { RegionsController } from './regions.controller';
+import { ImagesController } from './images.controller';
 import { AppController } from './app.controller';
 
 import { PublishersApiController } from './publishers-api.controller';
@@ -21,6 +20,7 @@ import { RegionsModule } from './modules/regions/regions.module';
 import { ReadersModule } from './modules/readers/readers.module';
 import { AdminsModule } from './modules/admins/admins.module';
 import { FilesModule } from './modules/files/files.module';
+import { S3Module } from './modules/s3/s3.module';
 
 @Module({
   imports: [
@@ -38,16 +38,13 @@ import { FilesModule } from './modules/files/files.module';
         },
       }),
     }),
-    ServeStaticModule.forRoot({
-      rootPath: path.resolve('uploads'),
-      serveRoot: '/uploads',
-    }),
     forwardRef(() => ArticlesModule),
     forwardRef(() => RegionsModule),
     forwardRef(() => ReadersModule),
     forwardRef(() => PublishersModule),
     forwardRef(() => AdminsModule),
     forwardRef(() => FilesModule),
+    forwardRef(() => S3Module),
   ],
   controllers: [
     AppController,
@@ -57,6 +54,7 @@ import { FilesModule } from './modules/files/files.module';
     ReadersController,
     RegionsController,
     PublishersApiController,
+    ImagesController,
   ],
   providers: [],
 })

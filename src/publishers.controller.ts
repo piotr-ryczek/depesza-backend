@@ -21,8 +21,6 @@ import { PublishersGuard, PublishersInitialGuard } from 'src/guards';
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 import { PublishersService } from 'src/modules/publishers/publishers.service';
 import { ArticlesService } from 'src/modules/articles/articles.service';
-import { ApiException } from 'src/lib/exceptions/api.exception';
-import ErrorCode from 'src/lib/error-code';
 
 @Controller('/publishers')
 @UseFilters(new ApiExceptionFilter())

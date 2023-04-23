@@ -12,20 +12,23 @@ export class EmailNotificationsService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       SES: new SES({
-        accessKeyId: process.env.AWS_SES_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SES_SECRET_ACCESS_KEY,
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
         region: process.env.AWS_REGION,
       }),
     });
   }
 
-  async sendEmailVerificationCode(email, code) {
-    const body = `<a href="${process.env.APP_NAME_DEEP_LINK}/confirmEmail/${code}">Otwórz link w aplikacji na swoim telefonie z Androidem</a>`;
+  async sendEmailVerificationCode(email: string, code: string): Promise<void> {
+    const body = `
+    <p><a href="${process.env.APP_NAME_DEEP_LINK}/confirmEmail/${code}">Otwórz link w aplikacji na swoim telefonie z Androidem</a></p>
+    <p>Jeśli link z jakiegoś powodu jest niewidoczny możesz ręcznie aktywować konto w aplikacji z użyciem tego kodu: <strong>${code}</strong></p>
+    `;
 
     await this.sendEmail(email, 'Zweryfikuj swój email', body);
   }
 
-  async sendEmail(email, subject, body) {
+  async sendEmail(email: string, subject: string, body: string): Promise<void> {
     if (!emailRegexp.test(email)) {
       throw new ApiException(ErrorCode.INCORRECT_EMAIL, 409);
     }
@@ -38,7 +41,6 @@ export class EmailNotificationsService {
         html: body,
       });
     } catch (error) {
-      console.log(error); // TODO:
       throw new ApiException(ErrorCode.EMAIL_HAS_NOT_BEEN_SEND, 500);
     }
   }

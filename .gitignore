@@ -41,5 +41,4 @@ lerna-debug.log*
 .env.prod
 .env.staging
 
-
 /uploads
