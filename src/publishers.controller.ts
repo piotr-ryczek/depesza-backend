@@ -35,7 +35,9 @@ export class PublishersController {
   ) {}
 
   @Post('/login')
-  async login(@Body() payload) {
+  async login(
+    @Body() payload: { email: string; password: string; code: string },
+  ) {
     const { email, password, code } = payload;
 
     const {
@@ -55,9 +57,7 @@ export class PublishersController {
 
   @Post('/refresh')
   @UseGuards(PublishersGuard)
-  async refreshToken(@Headers() headers) {
-    const { publisherId } = headers;
-
+  async refreshToken(@Headers('publisherId') publisherId: string) {
     const {
       token,
       hasPassword,
@@ -74,8 +74,10 @@ export class PublishersController {
 
   @Post('/setPassword')
   @UseGuards(PublishersInitialGuard)
-  async setPassword(@Body() payload, @Headers() headers) {
-    const { publisherId } = headers;
+  async setPassword(
+    @Body() payload: { password: string; repeatPassword: string },
+    @Headers('publisherId') publisherId: string,
+  ) {
     const { password, repeatPassword } = payload;
 
     const { secret2FA, email } = await this.publishersService.setPassword({
@@ -127,10 +129,9 @@ export class PublishersController {
   @UseInterceptors(FileInterceptor('file'))
   async createArticle(
     @Body() payload,
-    @Headers() headers,
-    @UploadedFile() file,
+    @Headers('publisherId') publisherId: string,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    const { publisherId } = headers;
     const { title, excerpt, content, regionId, isPublished } = payload;
 
     const article = await this.articlesService.createArticle({
@@ -215,7 +216,6 @@ export class PublishersController {
       articleId,
       publisherId,
       {
-        publisherId,
         isPublished,
         title,
         author,

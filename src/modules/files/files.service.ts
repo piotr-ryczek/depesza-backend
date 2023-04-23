@@ -26,16 +26,24 @@ export class FilesService implements OnModuleInit {
   }
 
   async checkDirectories() {
-    const uploadsDir = path.resolve('uploads');
+    const uploadsDir = path.resolve(config.uploadPath);
+    const uploadsSizesDirs = config.imageWidths.map((width) =>
+      path.resolve(`${config.uploadPath}/w${width}`),
+    );
 
-    try {
-      await fs.access(uploadsDir);
-    } catch (error) {
-      await fs.mkdir(uploadsDir);
+    const allPaths = [uploadsDir, ...uploadsSizesDirs];
+
+    // Synchronized as we want to start with base path
+    for await (const path of allPaths) {
+      try {
+        await fs.access(path);
+      } catch (error) {
+        await fs.mkdir(path);
+      }
     }
   }
 
-  async handleUpload(originalName, buffer) {
+  async handleUpload(originalName: string, buffer: Buffer): Promise<string> {
     const [, extension] = fileExtensionRegexp.exec(originalName);
 
     const finalFilename = `${v4()}.${extension}`;
@@ -48,31 +56,7 @@ export class FilesService implements OnModuleInit {
       throw new ApiException(ErrorCode.FILE_UPLOAD_ERROR, 503);
     }
 
-    const resizePromises = config.imageWidths.map(
-      (width) =>
-        new Promise(async (resolve, reject) => {
-          try {
-            const resizePath = `uploads/w${width}/${finalFilename}`;
-
-            const jimpImage = await Jimp.read(finalPath);
-            await jimpImage
-              .resize(width, Jimp.AUTO)
-              .quality(85)
-              .write(resizePath);
-
-            resolve(true);
-          } catch (error) {
-            reject(error);
-          }
-        }),
-    );
-
-    try {
-      await Promise.all(resizePromises);
-    } catch (error) {
-      console.log(error); // TODO:
-      throw new ApiException(ErrorCode.FILE_RESIZE_ERROR, 503);
-    }
+    await this.generateThumbnails([finalFilename]);
 
     const newFile = new this.FileModel({
       fileName: finalFilename,
@@ -84,7 +68,7 @@ export class FilesService implements OnModuleInit {
     return finalFilename;
   }
 
-  async uploadFile(file) {
+  async uploadFile(file: Express.Multer.File): Promise<string> {
     const { originalname, buffer } = file;
 
     const fileName = await this.handleUpload(originalname, buffer);
@@ -92,13 +76,63 @@ export class FilesService implements OnModuleInit {
     return fileName;
   }
 
-  async retrieveAndUploadFileFromUrl(fileUrl) {
-    const { data } = await this.httpService
-      .get(fileUrl, { responseType: 'arraybuffer' })
-      .toPromise();
+  async retrieveAndUploadFileFromUrl(fileUrl: string): Promise<string> {
+    try {
+      const { data } = await this.httpService
+        .get(fileUrl, { responseType: 'arraybuffer' })
+        .toPromise();
 
-    const fileName = await this.handleUpload(fileUrl, data);
+      const fileName = await this.handleUpload(fileUrl, data);
 
-    return fileName;
+      return fileName;
+    } catch (error) {
+      // TODO:
+      console.error(error);
+
+      return null;
+    }
+  }
+
+  async regenerateThumbnails(): Promise<void> {
+    const files = await this.FileModel.find({});
+    const fileNames = files.map(({ fileName }) => fileName);
+
+    await this.generateThumbnails(fileNames);
+  }
+
+  private async generateThumbnails(fileNames: string[]): Promise<void> {
+    const resizePromises = fileNames.reduce((acc, fileName) => {
+      return [
+        ...acc,
+        ...config.imageWidths.map(
+          (width) =>
+            new Promise(async (resolve, reject) => {
+              try {
+                const finalPath = `uploads/${fileName}`;
+
+                const resizePath = `uploads/w${width}/${fileName}`;
+
+                const jimpImage = await Jimp.read(finalPath);
+                jimpImage
+                  .resize(width, Jimp.AUTO)
+                  .quality(85)
+                  .write(resizePath);
+
+                resolve(true);
+              } catch (error) {
+                console.log('Resize Error', error);
+                reject(error);
+              }
+            }),
+        ),
+      ];
+    }, []);
+
+    try {
+      await Promise.all(resizePromises);
+    } catch (error) {
+      console.log(error); // TODO:
+      throw new ApiException(ErrorCode.FILE_RESIZE_ERROR, 503);
+    }
   }
 }

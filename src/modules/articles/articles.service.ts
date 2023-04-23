@@ -18,11 +18,20 @@ export class ArticlesService {
     private readonly emailNotificationsService: EmailNotificationsService,
   ) {}
 
-  async createArticle(values) {
+  async createArticle(values: {
+    publisherId: string;
+    title: string;
+    author?: string;
+    excerpt: string;
+    content: string;
+    photoFile?: Express.Multer.File;
+    regionId: string;
+    isPublished: boolean;
+  }): Promise<ArticleDocument> {
     const {
       publisherId,
       title,
-      author,
+      author = '',
       excerpt,
       content,
       photoFile = null,
@@ -54,10 +63,22 @@ export class ArticlesService {
     return newArticle;
   }
 
-  async updateArticle(articleId, publisherId, values) {
+  async updateArticle(
+    articleId: string,
+    publisherId: string,
+    values: {
+      title: string;
+      author?: string;
+      excerpt: string;
+      content: string;
+      photoFile?: Express.Multer.File;
+      regionId: string;
+      isPublished: boolean;
+    },
+  ): Promise<ArticleDocument> {
     const {
       title,
-      author,
+      author = '',
       excerpt,
       content,
       photoFile = null,
@@ -96,7 +117,17 @@ export class ArticlesService {
     return article;
   }
 
-  async createOrUpdateByWordpressId(wordpressId, publisherId, values) {
+  async createOrUpdateByWordpressId(
+    wordpressId: string,
+    publisherId: string,
+    values: {
+      title: string;
+      excerpt: string;
+      content: string;
+      photoUrl?: string;
+      regionId: string;
+    },
+  ): Promise<ArticleDocument> {
     const { title, excerpt, content, photoUrl = null, regionId } = values;
 
     const commonPayload = {
@@ -138,10 +169,13 @@ export class ArticlesService {
         photoUrl,
       );
 
-      Object.assign(article, {
-        photoUrl: uploadPhotoUrl,
-        lastWordpressPhotoUrl: photoUrl,
-      });
+      // In case of inability to download photo
+      if (uploadPhotoUrl) {
+        Object.assign(article, {
+          photoUrl: uploadPhotoUrl,
+          lastWordpressPhotoUrl: photoUrl,
+        });
+      }
     }
 
     await article.save();
@@ -149,7 +183,10 @@ export class ArticlesService {
     return article;
   }
 
-  async deleteArticle(publisherId, articleId) {
+  async deleteArticle(
+    publisherId: string,
+    articleId: string,
+  ): Promise<boolean> {
     const result = await this.ArticleModel.findOneAndRemove({
       _id: new Types.ObjectId(articleId),
       publishedBy: new Types.ObjectId(publisherId),
@@ -158,6 +195,8 @@ export class ArticlesService {
     if (!result) {
       throw new ApiException(ErrorCode.ARTICLE_HAS_NOT_BEEN_DELETED, 409);
     }
+
+    return true;
   }
 
   async queryArticles({
@@ -172,8 +211,11 @@ export class ArticlesService {
     findQuery?: FilterQuery<Article>;
     withCount?: boolean;
     onlyAccessible?: boolean; // Published and not reported by 2 or more publishers
-  }) {
-    const finalFindQuery = findQuery;
+  }): Promise<{ articles: ArticleDocument[]; countAll: number }> {
+    const finalFindQuery: FilterQuery<ArticleDocument> = {
+      ...findQuery,
+      publishedBy: { $ne: null },
+    };
 
     if (onlyAccessible) {
       Object.assign(finalFindQuery, {
@@ -194,7 +236,7 @@ export class ArticlesService {
 
     const response = {
       articles,
-      countAll: false,
+      countAll: -1,
     };
 
     if (withCount) {

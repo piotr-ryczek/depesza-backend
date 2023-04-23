@@ -88,7 +88,7 @@ export class ReadersController {
   async registerByEmail(@Body() payload) {
     const { email, password, repeatPassword } = payload;
 
-    await this.readersService.registerbyEmail(email, password, repeatPassword);
+    await this.readersService.registerByEmail(email, password, repeatPassword);
 
     return {
       status: 'ok',
@@ -102,8 +102,13 @@ export class ReadersController {
     const reader = await this.readersService.verifyEmail(emailVerificationCode);
     const token = this.readersService.getToken(reader);
 
+    const { toReadArticles, followedRegions, hasAccess } = reader;
+
     return {
       token,
+      toReadArticles,
+      followedRegions,
+      hasAccess,
     };
   }
 

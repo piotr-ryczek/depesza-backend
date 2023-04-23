@@ -11,9 +11,6 @@ export class Region {
   title: string;
 
   @Prop()
-  countries: string[];
-
-  @Prop()
   continent: string;
 
   @Prop()
