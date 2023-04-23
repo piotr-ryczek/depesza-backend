@@ -16,7 +16,7 @@ jobs:
       - name: Install yarn
         run: npm i -g yarn
       - name: install app dependencies
-        run: yarn
+        run: yarn i
         env:
           CI: true
       - name: Build
@@ -32,7 +32,7 @@ jobs:
           REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
           REMOTE_USER: ${{ secrets.REMOTE_USER }}
           TARGET: "domains/${{ secrets.STAGING_DOMAIN }}/public_nodejs"
-      - name: Copy .env
+      - name: Copy .env & .package_json
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.REMOTE_HOST }}
