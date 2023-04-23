@@ -17,6 +17,7 @@ import { ApiException } from 'src/lib/exceptions/api.exception';
 import ErrorCode from 'src/lib/error-code';
 import { ArticlesService } from 'src/modules/articles/articles.service';
 import { FilesService } from 'src/modules/files/files.service';
+import { ArticleDocument } from 'src/schemas/article.schema';
 
 @Injectable()
 export class PublishersService {
@@ -215,7 +216,19 @@ export class PublishersService {
     return publisher;
   }
 
-  async updatePublisher(publisherId, values) {
+  async updatePublisher(
+    publisherId: string,
+    values: {
+      logoFile?: Express.Multer.File;
+      name: string;
+      description: string;
+      authors: string[];
+      patroniteUrl: string;
+      facebookUrl: string;
+      twitterUrl: string;
+      www: string;
+    },
+  ) {
     const {
       logoFile = null,
       name,
@@ -252,7 +265,12 @@ export class PublishersService {
     return this.cleanFromCriticalInformation(publisher);
   }
 
-  async getReportedArticles(publisherId, page, perPage, withCount = false) {
+  async getReportedArticles(
+    publisherId: string,
+    page: number,
+    perPage: number,
+    withCount = false,
+  ): Promise<{ articles: ArticleDocument[]; countAll: number }> {
     const publisher = await this.PublisherModel.findById(publisherId);
 
     const articlesReported = publisher.articlesReported as Types.ObjectId[];
@@ -271,7 +289,10 @@ export class PublishersService {
     };
   }
 
-  async reportArticle(publisherId, articleId) {
+  async reportArticle(
+    publisherId: string,
+    articleId: string,
+  ): Promise<PublisherDocument> {
     const publisher = await this.PublisherModel.findById(publisherId);
 
     if (!publisher) {
@@ -306,7 +327,10 @@ export class PublishersService {
     return publisher;
   }
 
-  async undoReportArticle(publisherId, articleId) {
+  async undoReportArticle(
+    publisherId: string,
+    articleId: string,
+  ): Promise<PublisherDocument> {
     const publisher = await this.PublisherModel.findById(publisherId);
 
     if (!publisher) {
@@ -332,7 +356,10 @@ export class PublishersService {
     return publisher;
   }
 
-  async createApiCredentials(publisherId, apiPassword) {
+  async createApiCredentials(
+    publisherId: string,
+    apiPassword: string,
+  ): Promise<string> {
     const apiKey = randomBytes(15).toString('hex');
 
     const apiPasswordHash = await bcrypt.hash(
@@ -352,7 +379,18 @@ export class PublishersService {
     return apiKey;
   }
 
-  cleanFromCriticalInformation(publisher: PublisherDocument) {
+  cleanFromCriticalInformation(
+    publisher: PublisherDocument,
+  ): Omit<
+    Publisher,
+    | 'initialCode'
+    | 'password'
+    | 'secondFactorSecret'
+    | 'apiKey'
+    | 'apiPassword'
+    | 'articlesReported'
+    | 'createdAt'
+  > {
     const {
       initialCode,
       password,

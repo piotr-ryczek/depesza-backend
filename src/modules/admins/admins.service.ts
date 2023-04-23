@@ -21,7 +21,7 @@ export class AdminsService implements OnModuleInit {
     await this.checkForInitialAdmin();
   }
 
-  async checkForInitialAdmin() {
+  async checkForInitialAdmin(): Promise<boolean> {
     const adminsCount = await this.AdminModel.countDocuments({});
 
     if (adminsCount) {
@@ -43,7 +43,7 @@ export class AdminsService implements OnModuleInit {
     return true;
   }
 
-  async login(email, password) {
+  async login(email: string, password: string): Promise<string> {
     const admin = await this.AdminModel.findOne({ email });
 
     if (!admin) {
