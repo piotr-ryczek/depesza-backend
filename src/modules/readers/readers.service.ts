@@ -82,7 +82,7 @@ export class ReadersService {
     }
   }
 
-  async loginByEmail(email: string, password: string) {
+  async loginByEmail(email: string, password: string): Promise<ReaderDocument> {
     const reader = await this.ReaderModel.findOne({
       email: email.toLocaleLowerCase(),
       authType: AuthType.EMAIL,
@@ -105,7 +105,7 @@ export class ReadersService {
     return reader;
   }
 
-  async refreshToken(readerId) {
+  async refreshToken(readerId: string) {
     const reader = await this.ReaderModel.findById(readerId);
 
     if (!reader) {
@@ -145,7 +145,7 @@ export class ReadersService {
       +process.env.PASSWORD_SALT_ROUNDS,
     );
 
-    const emailVerificationCode = randomBytes(15).toString('hex');
+    const emailVerificationCode = randomBytes(6).toString('hex');
 
     const newReader = new this.ReaderModel({
       email: email.toLocaleLowerCase(),
@@ -156,12 +156,12 @@ export class ReadersService {
       createdAt: new Date(),
     });
 
-    await newReader.save();
-
     await this.emailNotificationsService.sendEmailVerificationCode(
       email,
       emailVerificationCode,
     );
+
+    await newReader.save();
 
     return newReader;
   }

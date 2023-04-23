@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { Model, Types } from 'mongoose';
+import { LeanDocument, Model, Types } from 'mongoose';
 import * as speakeasy from 'speakeasy';
 import * as bcrypt from 'bcryptjs';
 
@@ -382,7 +382,7 @@ export class PublishersService {
   cleanFromCriticalInformation(
     publisher: PublisherDocument,
   ): Omit<
-    Publisher,
+    LeanDocument<PublisherDocument>,
     | 'initialCode'
     | 'password'
     | 'secondFactorSecret'
@@ -400,7 +400,7 @@ export class PublishersService {
       articlesReported, // Not sure
       createdAt,
       ...rest
-    } = publisher;
+    } = publisher.toObject();
 
     return rest;
   }

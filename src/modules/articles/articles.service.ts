@@ -168,7 +168,6 @@ export class ArticlesService {
       const uploadPhotoUrl = await this.filesService.retrieveAndUploadFileFromUrl(
         photoUrl,
       );
-
       // In case of inability to download photo
       if (uploadPhotoUrl) {
         Object.assign(article, {

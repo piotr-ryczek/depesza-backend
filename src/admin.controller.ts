@@ -9,12 +9,14 @@ import {
   Body,
   Post,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 import { PublishersService } from 'src/modules/publishers/publishers.service';
 import { AdminsService } from 'src/modules/admins/admins.service';
 import { FilesService } from 'src/modules/files/files.service';
+import { S3Service } from 'src/modules/s3/s3.service';
 import { AdminsGuard } from 'src/guards';
 
 @Controller('/admin')
@@ -27,6 +29,8 @@ export class AdminController {
     private readonly publishersService: PublishersService,
     @Inject(forwardRef(() => FilesService))
     private readonly filesService: FilesService,
+    @Inject(forwardRef(() => S3Service))
+    private readonly s3Service: S3Service,
   ) {}
 
   @Post('/login')

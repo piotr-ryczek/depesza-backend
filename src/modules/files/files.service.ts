@@ -1,79 +1,38 @@
 import { Model } from 'mongoose';
-import { promises as fs } from 'fs';
 import { v4 } from 'uuid';
+import * as mime from 'mime-types';
 import * as Jimp from 'jimp';
-import * as path from 'path';
 
 import { InjectModel } from '@nestjs/mongoose';
-import { Injectable, HttpService, OnModuleInit } from '@nestjs/common';
+import { Injectable, HttpService, Logger } from '@nestjs/common';
 
 import config from 'src/lib/config';
 import { ApiException } from 'src/lib/exceptions/api.exception';
 import ErrorCode from 'src/lib/error-code';
 import { File, FileDocument } from 'src/schemas/file.schema';
 import { fileExtensionRegexp } from 'src/lib/helpers';
+import { S3Service } from 'src/modules/s3/s3.service';
 
 @Injectable()
-export class FilesService implements OnModuleInit {
+export class FilesService {
   constructor(
     @InjectModel(File.name)
     private readonly FileModel: Model<FileDocument>,
     private httpService: HttpService,
+    private s3Service: S3Service,
   ) {}
 
-  async onModuleInit() {
-    await this.checkDirectories();
-  }
-
-  async checkDirectories() {
-    const uploadsDir = path.resolve(config.uploadPath);
-    const uploadsSizesDirs = config.imageWidths.map((width) =>
-      path.resolve(`${config.uploadPath}/w${width}`),
-    );
-
-    const allPaths = [uploadsDir, ...uploadsSizesDirs];
-
-    // Synchronized as we want to start with base path
-    for await (const path of allPaths) {
-      try {
-        await fs.access(path);
-      } catch (error) {
-        await fs.mkdir(path);
-      }
-    }
-  }
-
-  async handleUpload(originalName: string, buffer: Buffer): Promise<string> {
-    const [, extension] = fileExtensionRegexp.exec(originalName);
-
-    const finalFilename = `${v4()}.${extension}`;
-    const finalPath = `uploads/${finalFilename}`;
-
-    try {
-      await fs.writeFile(finalPath, buffer);
-    } catch (error) {
-      console.log(error); // TODO:
-      throw new ApiException(ErrorCode.FILE_UPLOAD_ERROR, 503);
-    }
-
-    await this.generateThumbnails([finalFilename]);
-
-    const newFile = new this.FileModel({
-      fileName: finalFilename,
-      createdAt: new Date(),
-    });
-
-    await newFile.save();
-
-    return finalFilename;
-  }
-
+  /**
+   * Intend to be used with controller passing multer File
+   * @param file
+   */
   async uploadFile(file: Express.Multer.File): Promise<string> {
+    // TODO: Should be secured in interceptor for mimeType
     const { originalname, buffer } = file;
 
-    const fileName = await this.handleUpload(originalname, buffer);
+    const finalFinalName = await this.handleUpload(originalname, buffer);
 
-    return fileName;
+    return finalFinalName;
   }
 
   async retrieveAndUploadFileFromUrl(fileUrl: string): Promise<string> {
@@ -86,8 +45,8 @@ export class FilesService implements OnModuleInit {
 
       return fileName;
     } catch (error) {
-      // TODO:
-      console.error(error);
+      // TODO: Proper error handling
+      Logger.error(error);
 
       return null;
     }
@@ -100,38 +59,83 @@ export class FilesService implements OnModuleInit {
     await this.generateThumbnails(fileNames);
   }
 
+  private async handleUpload(originalFileName: string, buffer: Buffer) {
+    const extension = this.extractExtension(originalFileName);
+    const finalFilename = `${v4()}.${extension}`;
+
+    await this.s3Service.uploadFile(finalFilename, buffer);
+    await this.generateThumbnails([finalFilename]);
+
+    const newFile = new this.FileModel({
+      fileName: finalFilename,
+      createdAt: new Date(),
+    });
+
+    await newFile.save();
+
+    return finalFilename;
+  }
+
+  private extractExtension(fileName: string): string {
+    const [, extension] = fileExtensionRegexp.exec(fileName);
+
+    return extension;
+  }
+
+  private async fetchFileData(
+    fileName: string,
+  ): Promise<{ buffer: Buffer; mimeType: string; fileName: string }> {
+    const mimeType = mime.lookup(fileName);
+    const { Body } = await this.s3Service.getFile(fileName);
+
+    return {
+      buffer: Body as Buffer,
+      mimeType,
+      fileName,
+    };
+  }
+
   private async generateThumbnails(fileNames: string[]): Promise<void> {
-    const resizePromises = fileNames.reduce((acc, fileName) => {
-      return [
-        ...acc,
-        ...config.imageWidths.map(
-          (width) =>
-            new Promise(async (resolve, reject) => {
-              try {
-                const finalPath = `uploads/${fileName}`;
+    const filesData = await Promise.all(
+      fileNames.map((fileName) => this.fetchFileData(fileName)),
+    );
 
-                const resizePath = `uploads/w${width}/${fileName}`;
+    const resizePromises = filesData.reduce(
+      (acc, { buffer, mimeType, fileName }) => {
+        return [
+          ...acc,
+          ...config.imageWidths.map(
+            (width) =>
+              new Promise(async (resolve, reject) => {
+                try {
+                  const jimpImage = await Jimp.read(buffer);
+                  const jimpImageBuffer = await jimpImage
+                    .resize(width, Jimp.AUTO)
+                    .quality(85)
+                    .getBufferAsync(mimeType);
 
-                const jimpImage = await Jimp.read(finalPath);
-                jimpImage
-                  .resize(width, Jimp.AUTO)
-                  .quality(85)
-                  .write(resizePath);
+                  await this.s3Service.uploadFile(
+                    fileName,
+                    jimpImageBuffer,
+                    width.toString(),
+                  );
 
-                resolve(true);
-              } catch (error) {
-                console.log('Resize Error', error);
-                reject(error);
-              }
-            }),
-        ),
-      ];
-    }, []);
+                  resolve(true);
+                } catch (error) {
+                  Logger.error(error);
+                  reject(error);
+                }
+              }),
+          ),
+        ];
+      },
+      [],
+    );
 
     try {
       await Promise.all(resizePromises);
     } catch (error) {
-      console.log(error); // TODO:
+      Logger.error(error);
       throw new ApiException(ErrorCode.FILE_RESIZE_ERROR, 503);
     }
   }
