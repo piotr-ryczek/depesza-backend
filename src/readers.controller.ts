@@ -65,9 +65,7 @@ export class ReadersController {
 
   @Post('/refresh')
   @UseGuards(ReadersGuard)
-  async refreshToken(@Headers() headers) {
-    const { readerId } = headers;
-
+  async refreshToken(@Headers('reader-id') readerId) {
     const {
       token,
       toReadArticles,
@@ -115,9 +113,8 @@ export class ReadersController {
   // User board (articles from followed regions)
   @Get('/articles')
   @UseGuards(ReadersGuard)
-  async getArticles(@Query() query, @Headers() headers) {
+  async getArticles(@Query() query, @Headers('reader-id') readerId) {
     const { page, perPage } = query;
-    const { readerId } = headers;
 
     const {
       articles,
@@ -134,9 +131,8 @@ export class ReadersController {
 
   @Get('/articlesToRead')
   @UseGuards(ReadersGuard)
-  async getArticlesToRead(@Query() query, @Headers() headers) {
+  async getArticlesToRead(@Query() query, @Headers('reader-id') readerId) {
     const { page, perPage } = query;
-    const { readerId } = headers;
 
     const { articles } = await this.readersService.getArticlesToRead(
       readerId,
@@ -151,9 +147,10 @@ export class ReadersController {
 
   @Post('/articlesToRead/:articleId')
   @UseGuards(ReadersGuard)
-  async addArticleToRead(@Param('articleId') articleId, @Headers() headers) {
-    const { readerId } = headers;
-
+  async addArticleToRead(
+    @Param('articleId') articleId,
+    @Headers('reader-id') readerId,
+  ) {
     await this.readersService.addArticleToRead(readerId, articleId);
 
     return {
@@ -163,9 +160,10 @@ export class ReadersController {
 
   @Delete('/articlesToRead/:articleId')
   @UseGuards(ReadersGuard)
-  async removeArticleToRead(@Param('articleId') articleId, @Headers() headers) {
-    const { readerId } = headers;
-
+  async removeArticleToRead(
+    @Param('articleId') articleId,
+    @Headers('reader-id') readerId,
+  ) {
     await this.readersService.removeArticleToRead(readerId, articleId);
 
     return {
@@ -175,9 +173,8 @@ export class ReadersController {
 
   @Get('/articlesReaded')
   @UseGuards(ReadersGuard)
-  async getArticlesReaded(@Query() query, @Headers() headers) {
+  async getArticlesReaded(@Query() query, @Headers('reader-id') readerId) {
     const { page, perPage } = query;
-    const { readerId } = headers;
 
     const { articles } = await this.readersService.getArticlesReaded(
       readerId,
@@ -192,9 +189,10 @@ export class ReadersController {
 
   @Post('/articlesReaded/:articleId')
   @UseGuards(ReadersGuard)
-  async addArticleReaded(@Param('articleId') articleId, @Headers() headers) {
-    const { readerId } = headers;
-
+  async addArticleReaded(
+    @Param('articleId') articleId,
+    @Headers('reader-id') readerId,
+  ) {
     await this.readersService.addArticleReaded(readerId, articleId);
 
     return {
@@ -204,9 +202,10 @@ export class ReadersController {
 
   @Delete('/articlesReaded/:articleId')
   @UseGuards(ReadersGuard)
-  async removeArticleReaded(@Param('articleId') articleId, @Headers() headers) {
-    const { readerId } = headers;
-
+  async removeArticleReaded(
+    @Param('articleId') articleId,
+    @Headers('reader-id') readerId,
+  ) {
     await this.readersService.removeArticleReaded(readerId, articleId);
 
     return {
@@ -216,9 +215,7 @@ export class ReadersController {
 
   @Get('/regions')
   @UseGuards(ReadersGuard)
-  async getFollowedRegions(@Headers() headers) {
-    const { readerId } = headers;
-
+  async getFollowedRegions(@Headers('reader-id') readerId) {
     const regions = await this.readersService.getFollowedRegions(readerId);
 
     return {
@@ -228,9 +225,10 @@ export class ReadersController {
 
   @Post('/regions/:regionId')
   @UseGuards(ReadersGuard)
-  async followRegion(@Param('regionId') regionId, @Headers() headers) {
-    const { readerId } = headers;
-
+  async followRegion(
+    @Param('regionId') regionId,
+    @Headers('reader-id') readerId,
+  ) {
     await this.readersService.followRegion(readerId, regionId);
 
     return {
@@ -240,9 +238,10 @@ export class ReadersController {
 
   @Delete('/regions/:regionId')
   @UseGuards(ReadersGuard)
-  async unfollowRegion(@Param('regionId') regionId, @Headers() headers) {
-    const { readerId } = headers;
-
+  async unfollowRegion(
+    @Param('regionId') regionId,
+    @Headers('reader-id') readerId,
+  ) {
     await this.readersService.unfollowRegion(readerId, regionId);
 
     return {
@@ -252,9 +251,7 @@ export class ReadersController {
 
   @Patch('/settings')
   @UseGuards(ReadersGuard)
-  async updateSettings(@Body() payload, @Headers() headers) {
-    const { readerId } = headers;
-
+  async updateSettings(@Body() payload, @Headers('reader-id') readerId) {
     await this.readersService.updateSettings(readerId, payload);
 
     return {
@@ -264,8 +261,7 @@ export class ReadersController {
 
   // @Post('/sendToKindle/:articleId')
   // @UseGuards(ReadersGuard)
-  // async sendToKindle(@Param('articleId') articleId, @Headers() headers) {
-  //   const { readerId } = headers;
+  // async sendToKindle(@Param('articleId') articleId, @Headers('reader-id') readerId) {
 
   //   await this.readersService.sendToKindle(readerId, articleId);
 
@@ -276,8 +272,7 @@ export class ReadersController {
 
   // @Post('/sendToPocketBook/:articleId')
   // @UseGuards(ReadersGuard)
-  // async sendToPocketBook(@Param('articleId') articleId, @Headers() headers) {
-  //   const { readerId } = headers;
+  // async sendToPocketBook(@Param('articleId') articleId, @Headers('reader-id') readerId) {
 
   //   await this.readersService.sendToPocketBook(readerId, articleId);
 

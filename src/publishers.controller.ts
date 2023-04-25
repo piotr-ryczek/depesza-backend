@@ -55,7 +55,7 @@ export class PublishersController {
 
   @Post('/refresh')
   @UseGuards(PublishersGuard)
-  async refreshToken(@Headers('publisherId') publisherId: string) {
+  async refreshToken(@Headers('publisher-id') publisherId: string) {
     const {
       token,
       hasPassword,
@@ -74,7 +74,7 @@ export class PublishersController {
   @UseGuards(PublishersInitialGuard)
   async setPassword(
     @Body() payload: { password: string; repeatPassword: string },
-    @Headers('publisherId') publisherId: string,
+    @Headers('publisher-id') publisherId: string,
   ) {
     const { password, repeatPassword } = payload;
 
@@ -101,9 +101,8 @@ export class PublishersController {
 
   @Get('/articles')
   @UseGuards(PublishersGuard)
-  async getOwnArticles(@Query() query, @Headers() headers) {
+  async getOwnArticles(@Query() query, @Headers('publisher-id') publisherId) {
     const { page, perPage } = query;
-    const { publisherId } = headers;
 
     const {
       articles,
@@ -127,7 +126,7 @@ export class PublishersController {
   @UseInterceptors(FileInterceptor('file'))
   async createArticle(
     @Body() payload,
-    @Headers('publisherId') publisherId: string,
+    @Headers('publisher-id') publisherId,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const { title, excerpt, content, regionId, isPublished } = payload;
@@ -149,9 +148,10 @@ export class PublishersController {
 
   @Delete('/articles/:articleId')
   @UseGuards(PublishersGuard)
-  async deleteArticle(@Param('articleId') articleId, @Headers() headers) {
-    const { publisherId } = headers;
-
+  async deleteArticle(
+    @Param('articleId') articleId,
+    @Headers('publisher-id') publisherId,
+  ) {
     await this.articlesService.deleteArticle(publisherId, articleId);
 
     return {
@@ -164,11 +164,9 @@ export class PublishersController {
   @UseInterceptors(FileInterceptor('file'))
   async updatePublisher(
     @Body() payload,
-    @Headers() headers,
+    @Headers('publisher-id') publisherId,
     @UploadedFile() file,
   ) {
-    const { publisherId } = headers;
-
     const {
       name,
       description,
@@ -204,10 +202,9 @@ export class PublishersController {
   async updateArticle(
     @Body() payload,
     @Param('articleId') articleId,
-    @Headers() headers,
+    @Headers('publisher-id') publisherId: string,
     @UploadedFile() file,
   ) {
-    const { publisherId } = headers;
     const { title, author, excerpt, content, regionId, isPublished } = payload;
 
     const article = await this.articlesService.updateArticle(
@@ -231,8 +228,10 @@ export class PublishersController {
 
   @Get('/articlesReported')
   @UseGuards(PublishersGuard)
-  async getReportedArticles(@Query() query, @Headers() headers) {
-    const { publisherId } = headers;
+  async getReportedArticles(
+    @Query() query,
+    @Headers('publisher-id') publisherId,
+  ) {
     const { page, perPage } = query;
 
     const { articles } = await this.publishersService.getReportedArticles(
@@ -248,9 +247,10 @@ export class PublishersController {
 
   @Post('/articlesReported/:articleId')
   @UseGuards(PublishersGuard)
-  async reportArticle(@Param('articleId') articleId, @Headers() headers) {
-    const { publisherId } = headers;
-
+  async reportArticle(
+    @Param('articleId') articleId,
+    @Headers('publisher-id') publisherId,
+  ) {
     await this.publishersService.reportArticle(publisherId, articleId);
 
     return {
@@ -260,9 +260,10 @@ export class PublishersController {
 
   @Delete('/articlesReported/:articleId')
   @UseGuards(PublishersGuard)
-  async undoReportArticle(@Param('articleId') articleId, @Headers() headers) {
-    const { publisherId } = headers;
-
+  async undoReportArticle(
+    @Param('articleId') articleId,
+    @Headers('publisher-id') publisherId,
+  ) {
     await this.publishersService.undoReportArticle(publisherId, articleId);
 
     return {
@@ -272,9 +273,7 @@ export class PublishersController {
 
   @Get('/own')
   @UseGuards(PublishersGuard)
-  async getOwnPublisher(@Headers() headers) {
-    const { publisherId } = headers;
-
+  async getOwnPublisher(@Headers('publisher-id') publisherId) {
     const publisher = await this.publishersService.getPublisher(publisherId);
 
     return {
