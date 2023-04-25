@@ -51,8 +51,8 @@ export class ReadersGuard implements CanActivate {
       return false;
     }
 
-    request.headers.readerId = readerId;
-    request.headers.jwtToken = token;
+    request.headers['reader-id'] = readerId;
+    request.headers['jwt-token'] = token;
 
     return true;
   }

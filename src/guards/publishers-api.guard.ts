@@ -39,7 +39,7 @@ export class PublishersApiGuard implements CanActivate {
         apiPassword,
       );
 
-      request.headers.publisherId = publisherId;
+      request.headers['publisher-id'] = publisherId;
     } catch (error) {
       Logger.warn('PublisherApi unauthorized: apiQuery authorization failed');
 
