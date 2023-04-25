@@ -51,8 +51,8 @@ export class PublishersGuard implements CanActivate {
       return false;
     }
 
-    request.headers.publisherId = publisherId;
-    request.headers.jwtToken = token;
+    request.headers['publisher-id'] = publisherId;
+    request.headers['jwt-token'] = token;
 
     return true;
   }

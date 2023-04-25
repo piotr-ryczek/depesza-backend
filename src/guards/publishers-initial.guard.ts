@@ -42,7 +42,7 @@ export class PublishersInitialGuard implements CanActivate {
       return false;
     }
 
-    request.headers.publisherId = publisherId;
+    request.headers['publisher-id'] = publisherId;
 
     return true;
   }
