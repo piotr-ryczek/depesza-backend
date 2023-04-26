@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { LeanDocument, Model, Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as speakeasy from 'speakeasy';
 import * as bcrypt from 'bcryptjs';
 
@@ -17,7 +17,7 @@ import { ApiException } from 'src/lib/exceptions/api.exception';
 import ErrorCode from 'src/lib/error-code';
 import { ArticlesService } from 'src/modules/articles/articles.service';
 import { FilesService } from 'src/modules/files/files.service';
-import { ArticleDocument } from 'src/schemas/article.schema';
+import { ArticlesResponse, CleanedPublisher } from 'src/types';
 
 @Injectable()
 export class PublishersService {
@@ -201,7 +201,12 @@ export class PublishersService {
     };
   }
 
-  async getPublishers() {
+  async getPublishers(): Promise<
+    Pick<
+      PublisherDocument,
+      '_id' | 'name' | 'description' | 'logoUrl' | 'patroniteUrl'
+    >[]
+  > {
     const publishers = await this.PublisherModel.find(
       {},
       '_id name description logoUrl patroniteUrl',
@@ -210,7 +215,22 @@ export class PublishersService {
     return publishers;
   }
 
-  async getPublisher(publisherId) {
+  async getPublisher(
+    publisherId: string,
+  ): Promise<
+    Pick<
+      PublisherDocument,
+      | '_id'
+      | 'name'
+      | 'description'
+      | 'authors'
+      | 'logoUrl'
+      | 'patroniteUrl'
+      | 'facebookUrl'
+      | 'twitterUrl'
+      | 'www'
+    >
+  > {
     const publisher = await this.PublisherModel.findById(
       publisherId,
       '_id name description authors logoUrl patroniteUrl facebookUrl twitterUrl www',
@@ -231,7 +251,7 @@ export class PublishersService {
       twitterUrl: string;
       www: string;
     },
-  ) {
+  ): Promise<CleanedPublisher> {
     const {
       logoFile = null,
       name,
@@ -273,7 +293,7 @@ export class PublishersService {
     page: number,
     perPage: number,
     withCount = false,
-  ): Promise<{ articles: ArticleDocument[]; countAll: number }> {
+  ): Promise<ArticlesResponse> {
     const publisher = await this.PublisherModel.findById(publisherId);
 
     const articlesReported = publisher.articlesReported as Types.ObjectId[];
@@ -382,18 +402,7 @@ export class PublishersService {
     return apiKey;
   }
 
-  cleanFromCriticalInformation(
-    publisher: PublisherDocument,
-  ): Omit<
-    LeanDocument<PublisherDocument>,
-    | 'initialCode'
-    | 'password'
-    | 'secondFactorSecret'
-    | 'apiKey'
-    | 'apiPassword'
-    | 'articlesReported'
-    | 'createdAt'
-  > {
+  cleanFromCriticalInformation(publisher: PublisherDocument): CleanedPublisher {
     const {
       initialCode,
       password,

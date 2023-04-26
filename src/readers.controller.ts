@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Delete,
-  Patch,
   Inject,
   forwardRef,
   Body,
@@ -18,6 +17,13 @@ import { ReadersGuard } from 'src/guards';
 import { ReadersService } from 'src/modules/readers/readers.service';
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 import { ApiValidationExceptionFilter } from 'src/lib/exceptions/api-validation-exception.filter';
+import { ArticlesBasicQueryDto } from 'src/types/dtos/shared';
+import {
+  ReadersAuthByFacebookBodyDto,
+  ReadersLoginByEmailBodyDto,
+  ReadersRegisterByEmailBodyDto,
+  ReadersVerifyByEmailBodyDto,
+} from 'src/types/dtos/readers';
 
 @Controller('/readers')
 @UseFilters(new ApiExceptionFilter())
@@ -28,7 +34,7 @@ export class ReadersController {
   ) {}
 
   @Post('/authByFacebook')
-  async authByFacebook(@Body() payload) {
+  async authByFacebook(@Body() payload: ReadersAuthByFacebookBodyDto) {
     const { authToken } = payload;
 
     const reader = await this.readersService.loginOrRegisterByFacebook(
@@ -47,7 +53,7 @@ export class ReadersController {
   }
 
   @Post('/loginByEmail')
-  async loginByEmail(@Body() payload) {
+  async loginByEmail(@Body() payload: ReadersLoginByEmailBodyDto) {
     const { email, password } = payload;
 
     const reader = await this.readersService.loginByEmail(email, password);
@@ -65,7 +71,7 @@ export class ReadersController {
 
   @Post('/refresh')
   @UseGuards(ReadersGuard)
-  async refreshToken(@Headers('reader-id') readerId) {
+  async refreshToken(@Headers('reader-id') readerId: string) {
     const {
       token,
       toReadArticles,
@@ -83,7 +89,7 @@ export class ReadersController {
 
   @Post('/registerByEmail')
   @UseFilters(new ApiValidationExceptionFilter())
-  async registerByEmail(@Body() payload) {
+  async registerByEmail(@Body() payload: ReadersRegisterByEmailBodyDto) {
     const { email, password, repeatPassword } = payload;
 
     await this.readersService.registerByEmail(email, password, repeatPassword);
@@ -94,7 +100,7 @@ export class ReadersController {
   }
 
   @Post('/verifyEmail')
-  async verifyEmail(@Body() payload) {
+  async verifyEmail(@Body() payload: ReadersVerifyByEmailBodyDto) {
     const { emailVerificationCode } = payload;
 
     const reader = await this.readersService.verifyEmail(emailVerificationCode);
@@ -113,15 +119,18 @@ export class ReadersController {
   // User board (articles from followed regions)
   @Get('/articles')
   @UseGuards(ReadersGuard)
-  async getArticles(@Query() query, @Headers('reader-id') readerId) {
+  async getArticles(
+    @Query() query: ArticlesBasicQueryDto,
+    @Headers('reader-id') readerId: string,
+  ) {
     const { page, perPage } = query;
 
     const {
       articles,
     } = await this.readersService.getArticlesFromFollowedRegions(
       readerId,
-      page,
-      perPage,
+      +page,
+      +perPage,
     );
 
     return {
@@ -131,13 +140,16 @@ export class ReadersController {
 
   @Get('/articlesToRead')
   @UseGuards(ReadersGuard)
-  async getArticlesToRead(@Query() query, @Headers('reader-id') readerId) {
+  async getArticlesToRead(
+    @Query() query: ArticlesBasicQueryDto,
+    @Headers('reader-id') readerId: string,
+  ) {
     const { page, perPage } = query;
 
     const { articles } = await this.readersService.getArticlesToRead(
       readerId,
-      page,
-      perPage,
+      +page,
+      +perPage,
     );
 
     return {
@@ -148,8 +160,8 @@ export class ReadersController {
   @Post('/articlesToRead/:articleId')
   @UseGuards(ReadersGuard)
   async addArticleToRead(
-    @Param('articleId') articleId,
-    @Headers('reader-id') readerId,
+    @Param('articleId') articleId: string,
+    @Headers('reader-id') readerId: string,
   ) {
     await this.readersService.addArticleToRead(readerId, articleId);
 
@@ -161,8 +173,8 @@ export class ReadersController {
   @Delete('/articlesToRead/:articleId')
   @UseGuards(ReadersGuard)
   async removeArticleToRead(
-    @Param('articleId') articleId,
-    @Headers('reader-id') readerId,
+    @Param('articleId') articleId: string,
+    @Headers('reader-id') readerId: string,
   ) {
     await this.readersService.removeArticleToRead(readerId, articleId);
 
@@ -173,13 +185,16 @@ export class ReadersController {
 
   @Get('/articlesReaded')
   @UseGuards(ReadersGuard)
-  async getArticlesReaded(@Query() query, @Headers('reader-id') readerId) {
+  async getArticlesReaded(
+    @Query() query: ArticlesBasicQueryDto,
+    @Headers('reader-id') readerId: string,
+  ) {
     const { page, perPage } = query;
 
     const { articles } = await this.readersService.getArticlesReaded(
       readerId,
-      page,
-      perPage,
+      +page,
+      +perPage,
     );
 
     return {
@@ -190,8 +205,8 @@ export class ReadersController {
   @Post('/articlesReaded/:articleId')
   @UseGuards(ReadersGuard)
   async addArticleReaded(
-    @Param('articleId') articleId,
-    @Headers('reader-id') readerId,
+    @Param('articleId') articleId: string,
+    @Headers('reader-id') readerId: string,
   ) {
     await this.readersService.addArticleReaded(readerId, articleId);
 
@@ -203,8 +218,8 @@ export class ReadersController {
   @Delete('/articlesReaded/:articleId')
   @UseGuards(ReadersGuard)
   async removeArticleReaded(
-    @Param('articleId') articleId,
-    @Headers('reader-id') readerId,
+    @Param('articleId') articleId: string,
+    @Headers('reader-id') readerId: string,
   ) {
     await this.readersService.removeArticleReaded(readerId, articleId);
 
@@ -215,7 +230,7 @@ export class ReadersController {
 
   @Get('/regions')
   @UseGuards(ReadersGuard)
-  async getFollowedRegions(@Headers('reader-id') readerId) {
+  async getFollowedRegions(@Headers('reader-id') readerId: string) {
     const regions = await this.readersService.getFollowedRegions(readerId);
 
     return {
@@ -226,8 +241,8 @@ export class ReadersController {
   @Post('/regions/:regionId')
   @UseGuards(ReadersGuard)
   async followRegion(
-    @Param('regionId') regionId,
-    @Headers('reader-id') readerId,
+    @Param('regionId') regionId: string,
+    @Headers('reader-id') readerId: string,
   ) {
     await this.readersService.followRegion(readerId, regionId);
 
@@ -239,8 +254,8 @@ export class ReadersController {
   @Delete('/regions/:regionId')
   @UseGuards(ReadersGuard)
   async unfollowRegion(
-    @Param('regionId') regionId,
-    @Headers('reader-id') readerId,
+    @Param('regionId') regionId: string,
+    @Headers('reader-id') readerId: string,
   ) {
     await this.readersService.unfollowRegion(readerId, regionId);
 
@@ -249,15 +264,18 @@ export class ReadersController {
     };
   }
 
-  @Patch('/settings')
-  @UseGuards(ReadersGuard)
-  async updateSettings(@Body() payload, @Headers('reader-id') readerId) {
-    await this.readersService.updateSettings(readerId, payload);
+  // @Patch('/settings')
+  // @UseGuards(ReadersGuard)
+  // async updateSettings(
+  //   @Body() payload,
+  //   @Headers('reader-id') readerId: string,
+  // ) {
+  //   await this.readersService.updateSettings(readerId, payload);
 
-    return {
-      status: 'ok',
-    };
-  }
+  //   return {
+  //     status: 'ok',
+  //   };
+  // }
 
   // @Post('/sendToKindle/:articleId')
   // @UseGuards(ReadersGuard)

@@ -21,6 +21,11 @@ import { PublishersGuard, PublishersInitialGuard } from 'src/guards';
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 import { PublishersService } from 'src/modules/publishers/publishers.service';
 import { ArticlesService } from 'src/modules/articles/articles.service';
+import {
+  PublishersLoginBodyDto,
+  PublishersSetPasswordBodyDto,
+} from 'src/types/dtos/publishers';
+import { ArticlesBasicQueryDto } from 'src/types/dtos/shared';
 
 @Controller('/publishers')
 @UseFilters(new ApiExceptionFilter())
@@ -33,9 +38,7 @@ export class PublishersController {
   ) {}
 
   @Post('/login')
-  async login(
-    @Body() payload: { email: string; password: string; code: string },
-  ) {
+  async login(@Body() payload: PublishersLoginBodyDto) {
     const { email, password, code } = payload;
 
     const {
@@ -73,7 +76,7 @@ export class PublishersController {
   @Post('/setPassword')
   @UseGuards(PublishersInitialGuard)
   async setPassword(
-    @Body() payload: { password: string; repeatPassword: string },
+    @Body() payload: PublishersSetPasswordBodyDto,
     @Headers('publisher-id') publisherId: string,
   ) {
     const { password, repeatPassword } = payload;
@@ -101,7 +104,10 @@ export class PublishersController {
 
   @Get('/articles')
   @UseGuards(PublishersGuard)
-  async getOwnArticles(@Query() query, @Headers('publisher-id') publisherId) {
+  async getOwnArticles(
+    @Query() query: ArticlesBasicQueryDto,
+    @Headers('publisher-id') publisherId,
+  ) {
     const { page, perPage } = query;
 
     const {
@@ -109,8 +115,8 @@ export class PublishersController {
       countAll,
     } = await this.articlesService.getPublisherArticles({
       publisherId,
-      page,
-      perPage,
+      page: +page,
+      perPage: +perPage,
       withCount: true,
       onlyAccessible: false,
     });
@@ -126,7 +132,7 @@ export class PublishersController {
   @UseInterceptors(FileInterceptor('file'))
   async createArticle(
     @Body() payload,
-    @Headers('publisher-id') publisherId,
+    @Headers('publisher-id') publisherId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const { title, excerpt, content, regionId, isPublished } = payload;
@@ -164,8 +170,8 @@ export class PublishersController {
   @UseInterceptors(FileInterceptor('file'))
   async updatePublisher(
     @Body() payload,
-    @Headers('publisher-id') publisherId,
-    @UploadedFile() file,
+    @Headers('publisher-id') publisherId: string,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     const {
       name,
@@ -201,7 +207,7 @@ export class PublishersController {
   @UseInterceptors(FileInterceptor('file'))
   async updateArticle(
     @Body() payload,
-    @Param('articleId') articleId,
+    @Param('articleId') articleId: string,
     @Headers('publisher-id') publisherId: string,
     @UploadedFile() file,
   ) {
@@ -229,15 +235,15 @@ export class PublishersController {
   @Get('/articlesReported')
   @UseGuards(PublishersGuard)
   async getReportedArticles(
-    @Query() query,
-    @Headers('publisher-id') publisherId,
+    @Query() query: ArticlesBasicQueryDto,
+    @Headers('publisher-id') publisherId: string,
   ) {
     const { page, perPage } = query;
 
     const { articles } = await this.publishersService.getReportedArticles(
       publisherId,
-      page,
-      perPage,
+      +page,
+      +perPage,
     );
 
     return {
@@ -248,8 +254,8 @@ export class PublishersController {
   @Post('/articlesReported/:articleId')
   @UseGuards(PublishersGuard)
   async reportArticle(
-    @Param('articleId') articleId,
-    @Headers('publisher-id') publisherId,
+    @Param('articleId') articleId: string,
+    @Headers('publisher-id') publisherId: string,
   ) {
     await this.publishersService.reportArticle(publisherId, articleId);
 
@@ -273,7 +279,7 @@ export class PublishersController {
 
   @Get('/own')
   @UseGuards(PublishersGuard)
-  async getOwnPublisher(@Headers('publisher-id') publisherId) {
+  async getOwnPublisher(@Headers('publisher-id') publisherId: string) {
     const publisher = await this.publishersService.getPublisher(publisherId);
 
     return {
@@ -282,7 +288,7 @@ export class PublishersController {
   }
 
   @Get('/:publisherId')
-  async getPublisher(@Param('publisherId') publisherId) {
+  async getPublisher(@Param('publisherId') publisherId: string) {
     const publisher = await this.publishersService.getPublisher(publisherId);
 
     return {
@@ -293,14 +299,14 @@ export class PublishersController {
   @Get('/:publisherId/articles')
   async getPublisherArticles(
     @Param('publisherId') publisherId,
-    @Query() query,
+    @Query() query: ArticlesBasicQueryDto,
   ) {
     const { page, perPage } = query;
 
     const { articles } = await this.articlesService.getPublisherArticles({
       publisherId,
-      page,
-      perPage,
+      page: +page,
+      perPage: +perPage,
     });
 
     return {

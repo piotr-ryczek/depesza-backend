@@ -16,11 +16,13 @@ import {
   filterObjectIdsFrom,
   validatePassword,
 } from 'src/lib/helpers';
-import { AuthType, ValidationError } from 'src/types';
+import { ArticlesResponse, AuthType, ValidationError } from 'src/types';
 import { ArticlesService } from 'src/modules/articles/articles.service';
 import { RegionsService } from 'src/modules/regions/regions.service';
 import { EmailNotificationsService } from 'src/modules/email-notifications/email-notifications.service';
 import { ApiValidationException } from 'src/lib/exceptions/api-validation.exception';
+import { ArticleDocument } from 'src/schemas/article.schema';
+import { Region } from 'src/schemas/region.schema';
 
 @Injectable()
 export class ReadersService {
@@ -166,7 +168,7 @@ export class ReadersService {
     return newReader;
   }
 
-  async verifyEmail(emailVerificationCode): Promise<ReaderDocument> {
+  async verifyEmail(emailVerificationCode: string): Promise<ReaderDocument> {
     const reader = await this.ReaderModel.findOneAndUpdate(
       { emailVerificationCode, hasAccess: false },
       { hasAccess: true, emailVerificationCode: null },
@@ -181,11 +183,11 @@ export class ReadersService {
   }
 
   async getArticlesFromFollowedRegions(
-    readerId,
-    page,
-    perPage = config.defaultPerPage,
+    readerId: string,
+    page: number,
+    perPage: number = config.defaultPerPage,
     withCount = false,
-  ) {
+  ): Promise<ArticlesResponse> {
     const reader = await this.ReaderModel.findById(readerId);
 
     const { followedRegions } = reader;
@@ -207,11 +209,11 @@ export class ReadersService {
   }
 
   async getArticlesToRead(
-    readerId,
-    page,
-    perPage = config.defaultPerPage,
+    readerId: string,
+    page: number,
+    perPage: number = config.defaultPerPage,
     withCount = false,
-  ) {
+  ): Promise<ArticlesResponse> {
     const reader = await this.ReaderModel.findById(readerId);
 
     const toReadArticles = reader.toReadArticles as Types.ObjectId[];
@@ -229,7 +231,10 @@ export class ReadersService {
     };
   }
 
-  async addArticleToRead(readerId, articleToAddId) {
+  async addArticleToRead(
+    readerId: string,
+    articleToAddId: string,
+  ): Promise<ReaderDocument> {
     const reader = await this.ReaderModel.findById(readerId);
 
     const { toReadArticles } = reader;
@@ -252,7 +257,10 @@ export class ReadersService {
     return reader;
   }
 
-  async removeArticleToRead(readerId, articleToRemoveId) {
+  async removeArticleToRead(
+    readerId: string,
+    articleToRemoveId: string,
+  ): Promise<ReaderDocument> {
     const reader = await this.ReaderModel.findById(readerId);
 
     const { toReadArticles } = reader;
@@ -276,11 +284,11 @@ export class ReadersService {
   }
 
   async getArticlesReaded(
-    readerId,
-    page,
-    perPage = config.defaultPerPage,
+    readerId: string,
+    page: number,
+    perPage: number = config.defaultPerPage,
     withCount = false,
-  ) {
+  ): Promise<ArticlesResponse> {
     const reader = await this.ReaderModel.findById(readerId);
 
     const readedArticles = reader.readedArticles as Types.ObjectId[];
@@ -298,7 +306,10 @@ export class ReadersService {
     };
   }
 
-  async addArticleReaded(readerId, articleToAddId) {
+  async addArticleReaded(
+    readerId: string,
+    articleToAddId: string,
+  ): Promise<ReaderDocument> {
     const reader = await this.ReaderModel.findById(readerId);
 
     const { readedArticles } = reader;
@@ -321,7 +332,10 @@ export class ReadersService {
     return reader;
   }
 
-  async removeArticleReaded(readerId, articleToRemoveId) {
+  async removeArticleReaded(
+    readerId: string,
+    articleToRemoveId: string,
+  ): Promise<ReaderDocument> {
     const reader = await this.ReaderModel.findById(readerId);
 
     const { readedArticles } = reader;
@@ -344,17 +358,20 @@ export class ReadersService {
     return reader;
   }
 
-  async getFollowedRegions(readerId) {
+  async getFollowedRegions(readerId: string): Promise<Region[]> {
     const reader = await this.ReaderModel.findById(readerId).populate(
       'followedRegions',
     );
 
     const { followedRegions } = reader;
 
-    return followedRegions;
+    return followedRegions as Region[];
   }
 
-  async followRegion(readerId, regionToFollowId) {
+  async followRegion(
+    readerId: string,
+    regionToFollowId: string,
+  ): Promise<ReaderDocument> {
     const reader = await this.ReaderModel.findById(readerId);
 
     const { followedRegions } = reader;
@@ -379,7 +396,10 @@ export class ReadersService {
     return reader;
   }
 
-  async unfollowRegion(readerId, regionToUnfollowId) {
+  async unfollowRegion(
+    readerId: string,
+    regionToUnfollowId: string,
+  ): Promise<ReaderDocument> {
     const reader = await this.ReaderModel.findById(readerId);
 
     const { followedRegions } = reader;
@@ -405,19 +425,19 @@ export class ReadersService {
     return reader;
   }
 
-  async updateSettings(readerId, settings) {
-    const reader = await this.ReaderModel.findById(readerId);
+  // async updateSettings(readerId, settings) {
+  //   const reader = await this.ReaderModel.findById(readerId);
 
-    if (!reader) {
-      throw new ApiException(ErrorCode.READER_DOES_NOT_EXIST, 409);
-    }
+  //   if (!reader) {
+  //     throw new ApiException(ErrorCode.READER_DOES_NOT_EXIST, 409);
+  //   }
 
-    Object.assign(reader, settings);
+  //   Object.assign(reader, settings);
 
-    await reader.save();
+  //   await reader.save();
 
-    return reader;
-  }
+  //   return reader;
+  // }
 
   // async sendToKindle(readerId, articleId) {
   //   const reader = await this.ReaderModel.findById(readerId);
