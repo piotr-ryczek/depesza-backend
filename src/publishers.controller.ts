@@ -22,8 +22,11 @@ import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 import { PublishersService } from 'src/modules/publishers/publishers.service';
 import { ArticlesService } from 'src/modules/articles/articles.service';
 import {
+  PublishersCreateArticleBodyDto,
   PublishersLoginBodyDto,
   PublishersSetPasswordBodyDto,
+  PublishersUpdateArticleBodyDto,
+  PublishersUpdatePublisherBodyDto,
 } from 'src/types/dtos/publishers';
 import { ArticlesBasicQueryDto } from 'src/types/dtos/shared';
 
@@ -106,7 +109,7 @@ export class PublishersController {
   @UseGuards(PublishersGuard)
   async getOwnArticles(
     @Query() query: ArticlesBasicQueryDto,
-    @Headers('publisher-id') publisherId,
+    @Headers('publisher-id') publisherId: string,
   ) {
     const { page, perPage } = query;
 
@@ -131,7 +134,7 @@ export class PublishersController {
   @UseGuards(PublishersGuard)
   @UseInterceptors(FileInterceptor('file'))
   async createArticle(
-    @Body() payload,
+    @Body() payload: PublishersCreateArticleBodyDto,
     @Headers('publisher-id') publisherId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
@@ -155,8 +158,8 @@ export class PublishersController {
   @Delete('/articles/:articleId')
   @UseGuards(PublishersGuard)
   async deleteArticle(
-    @Param('articleId') articleId,
-    @Headers('publisher-id') publisherId,
+    @Param('articleId') articleId: string,
+    @Headers('publisher-id') publisherId: string,
   ) {
     await this.articlesService.deleteArticle(publisherId, articleId);
 
@@ -169,7 +172,7 @@ export class PublishersController {
   @UseGuards(PublishersGuard)
   @UseInterceptors(FileInterceptor('file'))
   async updatePublisher(
-    @Body() payload,
+    @Body() payload: PublishersUpdatePublisherBodyDto,
     @Headers('publisher-id') publisherId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
@@ -188,7 +191,7 @@ export class PublishersController {
       {
         name,
         description,
-        authors: authors.split(','),
+        authors: authors.split(','), // Done that way to simplify Admin Panel Frontend
         logoFile: file,
         patroniteUrl,
         facebookUrl,
@@ -206,10 +209,10 @@ export class PublishersController {
   @UseGuards(PublishersGuard)
   @UseInterceptors(FileInterceptor('file'))
   async updateArticle(
-    @Body() payload,
+    @Body() payload: PublishersUpdateArticleBodyDto,
     @Param('articleId') articleId: string,
     @Headers('publisher-id') publisherId: string,
-    @UploadedFile() file,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     const { title, author, excerpt, content, regionId, isPublished } = payload;
 
@@ -267,8 +270,8 @@ export class PublishersController {
   @Delete('/articlesReported/:articleId')
   @UseGuards(PublishersGuard)
   async undoReportArticle(
-    @Param('articleId') articleId,
-    @Headers('publisher-id') publisherId,
+    @Param('articleId') articleId: string,
+    @Headers('publisher-id') publisherId: string,
   ) {
     await this.publishersService.undoReportArticle(publisherId, articleId);
 
@@ -298,7 +301,7 @@ export class PublishersController {
 
   @Get('/:publisherId/articles')
   async getPublisherArticles(
-    @Param('publisherId') publisherId,
+    @Param('publisherId') publisherId: string,
     @Query() query: ArticlesBasicQueryDto,
   ) {
     const { page, perPage } = query;

@@ -1,6 +1,6 @@
 import { IsString, IsOptional } from 'class-validator';
 
-export class WordpressUpdateOrCreateArticleDto {
+export class WordpressUpdateOrCreateArticleBodyDto {
   @IsString()
   wordpressId: string;
 
