@@ -9,6 +9,8 @@ import ErrorCode from 'src/lib/error-code';
 import { FilesService } from 'src/modules/files/files.service';
 import { EmailNotificationsService } from 'src/modules/email-notifications/email-notifications.service';
 import { cleanupHTML } from 'src/lib/helpers';
+import { Region } from 'src/schemas/region.schema';
+import { ArticlesResponse } from 'src/types';
 
 export class ArticlesService {
   constructor(
@@ -210,7 +212,7 @@ export class ArticlesService {
     findQuery?: FilterQuery<Article>;
     withCount?: boolean;
     onlyAccessible?: boolean; // Published and not reported by 2 or more publishers
-  }): Promise<{ articles: ArticleDocument[]; countAll: number }> {
+  }): Promise<ArticlesResponse> {
     const finalFindQuery: FilterQuery<ArticleDocument> = {
       ...findQuery,
       publishedBy: { $ne: null },
@@ -229,7 +231,8 @@ export class ArticlesService {
       .limit(+perPage)
       .populate({
         path: 'publishedBy',
-        select: '_id name author logoUrl patroniteUrl',
+        select:
+          '_id name author logoUrl patroniteUrl patreonUrl buyCoffeeToUrl',
       })
       .populate('region');
 
@@ -249,18 +252,23 @@ export class ArticlesService {
     return response;
   }
 
-  async getArticle(articleId) {
+  async getArticle(articleId: string): Promise<ArticleDocument> {
     const article = await this.ArticleModel.findById(articleId)
       .populate('region')
       .populate({
         path: 'publishedBy',
-        select: '_id name author logoUrl patroniteUrl',
+        select:
+          '_id name author logoUrl patroniteUrl patreonUrl buyCoffeeToUrl',
       });
 
     return article;
   }
 
-  async getArticles(page, perPage, withCount = false) {
+  async getArticles(
+    page: number,
+    perPage: number,
+    withCount = false,
+  ): Promise<ArticlesResponse> {
     const { articles, countAll } = await this.queryArticles({
       page,
       perPage,
@@ -274,11 +282,11 @@ export class ArticlesService {
   }
 
   async getArticlesFromRegionIds(
-    regionIds,
-    page,
-    perPage = config.defaultPerPage,
+    regionIds: (string | RegExp | Types.ObjectId | Region)[],
+    page: number,
+    perPage: number = config.defaultPerPage,
     withCount = false,
-  ) {
+  ): Promise<ArticlesResponse> {
     const { articles, countAll } = await this.queryArticles({
       findQuery: { region: { $in: regionIds } },
       page,
@@ -293,11 +301,11 @@ export class ArticlesService {
   }
 
   async getArticlesFromRegion(
-    regionId,
-    page,
-    perPage = config.defaultPerPage,
+    regionId: string,
+    page: number,
+    perPage: number = config.defaultPerPage,
     withCount = false,
-  ) {
+  ): Promise<ArticlesResponse> {
     const { articles, countAll } = await this.queryArticles({
       findQuery: { region: new Types.ObjectId(regionId) },
       page,
@@ -323,7 +331,7 @@ export class ArticlesService {
     perPage: number;
     withCount?: boolean;
     onlyAccessible?: boolean;
-  }) {
+  }): Promise<ArticlesResponse> {
     const { articles, countAll } = await this.queryArticles({
       findQuery: { publishedBy: new Types.ObjectId(publisherId) },
       page,
@@ -338,7 +346,7 @@ export class ArticlesService {
     };
   }
 
-  async checkifArticleExists(articleId) {
+  async checkifArticleExists(articleId: string): Promise<boolean> {
     const article = await this.ArticleModel.findById(articleId);
 
     if (!article) {
@@ -360,7 +368,7 @@ export class ArticlesService {
     perPage?: number;
     withCount?: boolean;
     onlyAccessible?: boolean;
-  }) {
+  }): Promise<ArticlesResponse> {
     const { articles, countAll } = await this.queryArticles({
       findQuery: { _id: { $in: ids } },
       page,
@@ -375,7 +383,10 @@ export class ArticlesService {
     };
   }
 
-  async checkIfPublisherHasArticle(publisherId, articleId) {
+  async checkIfPublisherHasArticle(
+    publisherId: string,
+    articleId: string,
+  ): Promise<boolean> {
     const article = await this.ArticleModel.findOne({
       _id: new Types.ObjectId(articleId),
       publishedBy: new Types.ObjectId(publisherId),
@@ -384,7 +395,7 @@ export class ArticlesService {
     return !!article;
   }
 
-  async reportBy(articleId, publisherId) {
+  async reportBy(articleId: string, publisherId: string): Promise<void> {
     await this.ArticleModel.findByIdAndUpdate(
       articleId,
       {
@@ -397,7 +408,7 @@ export class ArticlesService {
     );
   }
 
-  async undoReportBy(articleId, publisherId) {
+  async undoReportBy(articleId: string, publisherId: string): Promise<void> {
     await this.ArticleModel.findByIdAndUpdate(
       articleId,
       {
