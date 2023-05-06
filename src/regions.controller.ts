@@ -11,6 +11,7 @@ import {
 import { ApiExceptionFilter } from 'src/lib/exceptions/api-exception.filter';
 import { RegionsService } from 'src/modules/regions/regions.service';
 import { ArticlesService } from 'src/modules/articles/articles.service';
+import { ArticlesBasicQueryDto } from 'src/types/dtos/shared';
 
 @Controller('/regions')
 @UseFilters(new ApiExceptionFilter())
@@ -32,7 +33,7 @@ export class RegionsController {
   }
 
   @Get('/:regionId')
-  async getRegion(@Param('regionId') regionId) {
+  async getRegion(@Param('regionId') regionId: string) {
     const region = await this.regionsService.getRegion(regionId);
 
     return {
@@ -41,13 +42,16 @@ export class RegionsController {
   }
 
   @Get('/:regionId/articles')
-  async getArticlesForRegion(@Param('regionId') regionId, @Query() query) {
+  async getArticlesForRegion(
+    @Param('regionId') regionId: string,
+    @Query() query: ArticlesBasicQueryDto,
+  ) {
     const { page, perPage } = query;
 
     const { articles } = await this.articlesService.getArticlesFromRegion(
       regionId,
-      page,
-      perPage,
+      +page,
+      +perPage,
     );
 
     return {

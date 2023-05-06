@@ -17,7 +17,7 @@ export class PublishersApiGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
 
-    const { apikey, authorization } = request.headers;
+    const { apikey, authorization } = request.headers; // TODO: apiKey => api-key, also change in WordPress Plugin
 
     if (!authorization || !apikey) {
       Logger.warn('PublisherApi unauthorized: lack of authorization or apiKey');
