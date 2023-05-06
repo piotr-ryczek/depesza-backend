@@ -43,6 +43,12 @@ export class Publisher {
   patroniteUrl: string; // Editable
 
   @Prop()
+  patreonUrl: string; // Editable
+
+  @Prop()
+  buyCoffeeToUrl: string; // Editable
+
+  @Prop()
   facebookUrl: string; // Editable
 
   @Prop()
@@ -51,6 +57,7 @@ export class Publisher {
   @Prop()
   www: string; // Editable
 
+  // Probably currently unused, its not populated in database
   @Prop({ type: Types.ObjectId, ref: 'Article', default: [] })
   articles: Types.ObjectId[] | Article[];
 

@@ -14,6 +14,12 @@ export class PublishersUpdatePublisherBodyDto {
   patroniteUrl: string;
 
   @IsString()
+  patreonUrl: string;
+
+  @IsString()
+  buyCoffeeToUrl: string;
+
+  @IsString()
   facebookUrl: string;
 
   @IsString()

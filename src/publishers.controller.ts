@@ -181,6 +181,8 @@ export class PublishersController {
       description,
       authors,
       patroniteUrl,
+      patreonUrl,
+      buyCoffeeToUrl,
       facebookUrl,
       twitterUrl,
       www,
@@ -194,6 +196,8 @@ export class PublishersController {
         authors: authors.split(','), // Done that way to simplify Admin Panel Frontend
         logoFile: file,
         patroniteUrl,
+        patreonUrl,
+        buyCoffeeToUrl,
         facebookUrl,
         twitterUrl,
         www,

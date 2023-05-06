@@ -231,7 +231,8 @@ export class ArticlesService {
       .limit(+perPage)
       .populate({
         path: 'publishedBy',
-        select: '_id name author logoUrl patroniteUrl',
+        select:
+          '_id name author logoUrl patroniteUrl patreonUrl buyCoffeeToUrl',
       })
       .populate('region');
 
@@ -256,7 +257,8 @@ export class ArticlesService {
       .populate('region')
       .populate({
         path: 'publishedBy',
-        select: '_id name author logoUrl patroniteUrl',
+        select:
+          '_id name author logoUrl patroniteUrl patreonUrl buyCoffeeToUrl',
       });
 
     return article;

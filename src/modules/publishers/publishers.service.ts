@@ -204,12 +204,18 @@ export class PublishersService {
   async getPublishers(): Promise<
     Pick<
       PublisherDocument,
-      '_id' | 'name' | 'description' | 'logoUrl' | 'patroniteUrl'
+      | '_id'
+      | 'name'
+      | 'description'
+      | 'logoUrl'
+      | 'patroniteUrl'
+      | 'patreonUrl'
+      | 'buyCoffeeToUrl'
     >[]
   > {
     const publishers = await this.PublisherModel.find(
       {},
-      '_id name description logoUrl patroniteUrl',
+      '_id name description logoUrl patroniteUrl patreonUrl buyCoffeeToUrl',
     );
 
     return publishers;
@@ -226,6 +232,8 @@ export class PublishersService {
       | 'authors'
       | 'logoUrl'
       | 'patroniteUrl'
+      | 'patreonUrl'
+      | 'buyCoffeeToUrl'
       | 'facebookUrl'
       | 'twitterUrl'
       | 'www'
@@ -233,7 +241,7 @@ export class PublishersService {
   > {
     const publisher = await this.PublisherModel.findById(
       publisherId,
-      '_id name description authors logoUrl patroniteUrl facebookUrl twitterUrl www',
+      '_id name description authors logoUrl patroniteUrl patreonUrl buyCoffeeToUrl facebookUrl twitterUrl www',
     );
 
     return publisher;
@@ -247,6 +255,8 @@ export class PublishersService {
       description: string;
       authors: string[];
       patroniteUrl: string;
+      patreonUrl: string;
+      buyCoffeeToUrl: string;
       facebookUrl: string;
       twitterUrl: string;
       www: string;
@@ -258,6 +268,8 @@ export class PublishersService {
       description,
       authors,
       patroniteUrl,
+      patreonUrl,
+      buyCoffeeToUrl,
       facebookUrl,
       twitterUrl,
       www,
@@ -270,6 +282,8 @@ export class PublishersService {
       description,
       authors,
       patroniteUrl,
+      patreonUrl,
+      buyCoffeeToUrl,
       facebookUrl,
       twitterUrl,
       www,
