@@ -1,11 +1,12 @@
-import { IsString, IsBoolean } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 
 export class PublishersUpdateArticleBodyDto {
   @IsString()
   title: string;
 
   @IsString()
-  author: string;
+  @IsOptional()
+  author?: string;
 
   @IsString()
   excerpt: string;
@@ -16,6 +17,7 @@ export class PublishersUpdateArticleBodyDto {
   @IsString()
   regionId: string;
 
-  @IsBoolean()
-  isPublished: boolean;
+  @IsString()
+  @IsOptional()
+  isPublished?: boolean;
 }
