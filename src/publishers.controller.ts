@@ -138,11 +138,12 @@ export class PublishersController {
     @Headers('publisher-id') publisherId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const { title, excerpt, content, regionId, isPublished } = payload;
+    const { title, author, excerpt, content, regionId, isPublished } = payload;
 
     const article = await this.articlesService.createArticle({
       publisherId,
       isPublished,
+      author,
       title,
       excerpt,
       content,
