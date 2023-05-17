@@ -21,7 +21,7 @@ export class EmailNotificationsService {
 
   async sendEmailVerificationCode(email: string, code: string): Promise<void> {
     const body = `
-    <p><a href="${process.env.APP_NAME_DEEP_LINK}/confirmEmail/${code}">Otwórz link w aplikacji na swoim telefonie z Androidem</a></p>
+    <p><a href="${process.env.APP_NAME_DEEP_LINK}://confirmEmail/${code}">Otwórz link w aplikacji na swoim telefonie z Androidem</a></p>
     <p>Jeśli link z jakiegoś powodu jest niewidoczny możesz ręcznie aktywować konto w aplikacji z użyciem tego kodu: <strong>${code}</strong></p>
     `;
 
